@@ -9,10 +9,10 @@ public class MsgSender {
         this.multicastAddress = multicastAddress;
     }
 
-    public void sendMsg(String msg, String from) {
+    public void sendMsg(String msg, String from, String msgType, int view) {
         LocalTime time = LocalTime.now();
         DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("HHmmss");
-        ReliableMsg rmsg = new ReliableMsg(msg, "msg", time.format(myFormatObj), from);
+        ReliableMsg rmsg = new ReliableMsg(msg, msgType, time.format(myFormatObj), from, view);
     }
 
     //per testing

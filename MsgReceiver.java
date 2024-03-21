@@ -1,5 +1,9 @@
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.MulticastSocket;
+import java.net.UnknownHostException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -8,9 +12,24 @@ import java.util.Set;
 
 public class MsgReceiver {
     //classe per ricezione dei messaggi
+    private String multicastAddress;
 
+    public MsgReceiver(String multicastAddress) {
+        this.multicastAddress = multicastAddress;
+    }
 
     public void run() {
+        InetAddress ip= null;
+        try {
+            ip = InetAddress.getByName("225.255.255.255");
+        } catch (UnknownHostException ex) {
+            throw new RuntimeException(ex);
+        }
+        DatagramPacket data=new DatagramPacket(inputByte, inputByte.length, ip, 30000);
+        DatagramSocket ms = new DatagramSocket();
+        ms.send(data);
+        ms.close();
+    }
         try {
             Selector selector = Selector.open();
 
