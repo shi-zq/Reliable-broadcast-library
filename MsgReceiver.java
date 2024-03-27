@@ -18,7 +18,6 @@ public class MsgReceiver implements Runnable{
     private DatagramSocket sendSocket;
     private ByteArrayOutputStream baos;
     private ObjectOutputStream oos;
-    private SharedResource sharedResource;
     final int bufferSize = 2048; //1024 riservato per head 1024 riservato per body
 
     public MsgReceiver(MsgSender msgSender, String ip, int port, InetAddress broadcast) throws IOException {
@@ -30,7 +29,6 @@ public class MsgReceiver implements Runnable{
         sendSocket.setBroadcast(true);
         this.baos = new ByteArrayOutputStream();
         this.oos = new ObjectOutputStream(baos);
-        this.sharedResource = new SharedResource();
     }
 
     public void run(){
@@ -99,12 +97,12 @@ public class MsgReceiver implements Runnable{
     public void handleJoin(ReliableMsg msg) {
         if(!msg.getFrom().equals(ip)) {
             //only join from ip different, meaningless join msg from myself
-            switch (sharedResource.getState()) {
+            switch (msgSender.getState()) {
                 case("new"):
                     //ignored
                     break;
                 case("joined"):
-                    sharedResource.setChange();
+                    msgSender.setChange();
                     break;
                 case("change"):
                     //ignored

@@ -1,5 +1,6 @@
 public class AliveSender implements  Runnable{
-    //classe per invio di alive in modo costante
+
+    private MsgSender msgSender;
 
     public void run() {
 

@@ -12,8 +12,5 @@ broadcast the message
 ## ReliableMsg
 the msg sended over LAN network
 
-## SharedResource
-shared resource, maybe need to split after
-
 ## ReliableBroadcast
 should include all upper part
