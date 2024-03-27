@@ -1,12 +1,19 @@
 # Reliable-broadcast-library
 
-##AliveSender
+## AliveSender
 send ALIVE to all member and check every x second the last ALIVE from other node
-##MsgReceiver
+
+## MsgReceiver
 a thread that receive msg and handle msg
-##MsgSender
+
+## MsgSender
 broadcast the message
-##ReliableMsg
+
+## ReliableMsg
 the msg sended over LAN network
-##SharedResource
+
+## SharedResource
 shared resource, maybe need to split after
+
+## ReliableBroadcast
+should include all upper part
