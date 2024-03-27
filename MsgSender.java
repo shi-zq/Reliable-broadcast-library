@@ -8,6 +8,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 public class MsgSender {
+    private int view;
     private String ip;
     private int port;
     private InetAddress broadcast;
@@ -16,6 +17,7 @@ public class MsgSender {
     private ObjectOutputStream oos;
     private SharedResource sharedResource;
     public MsgSender(String ip, int port, InetAddress broadcast) throws IOException{
+        this.view = 0;
         this.ip = ip;
         this.port = port;
         this.broadcast = broadcast;

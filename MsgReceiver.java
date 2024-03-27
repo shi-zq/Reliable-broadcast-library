@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 public class MsgReceiver implements Runnable{
+    private MsgSender msgSender;
     private String ip;
     private int port;
     private InetAddress broadcast;
@@ -20,7 +21,8 @@ public class MsgReceiver implements Runnable{
     private SharedResource sharedResource;
     final int bufferSize = 2048; //1024 riservato per head 1024 riservato per body
 
-    public MsgReceiver(String ip, int port, InetAddress broadcast) throws IOException {
+    public MsgReceiver(MsgSender msgSender, String ip, int port, InetAddress broadcast) throws IOException {
+        this.msgSender = msgSender;
         this.ip = ip;
         this.port = port;
         this.broadcast = broadcast;
@@ -62,12 +64,17 @@ public class MsgReceiver implements Runnable{
                                 ByteArrayInputStream bais = new ByteArrayInputStream(readData.array());
                                 ObjectInputStream ois = new ObjectInputStream(bais);
                                 ReliableMsg msg =  (ReliableMsg) ois.readObject();
+                                msg.print();
                                 switch(msg.getType()) {
+                                    //加case+加handle
                                     case("JOIN"):
-                                        HandleJoin(msg);
+                                        handleJoin(msg);
                                         break;
-                                    case("WELCOME"):
-                                        HandleWelcome(msg);
+                                    case("END"):
+                                        handleEnd(msg);
+                                        break;
+                                    default:
+                                        break;
                                 }
 
                             }
@@ -89,11 +96,24 @@ public class MsgReceiver implements Runnable{
         }
     }
 
-    public void HandleJoin(ReliableMsg msg) {
-        msg.print();
-
+    public void handleJoin(ReliableMsg msg) {
+        if(!msg.getFrom().equals(ip)) {
+            //only join from ip different, meaningless join msg from myself
+            switch (sharedResource.getState()) {
+                case("new"):
+                    //ignored
+                    break;
+                case("joined"):
+                    sharedResource.setChange();
+                    break;
+                case("change"):
+                    //ignored
+                    break;
+            }
+        }
     }
-    public void HandleWelcome(ReliableMsg msg) {
+
+    public void handleEnd(ReliableMsg msg) {
 
     }
 
