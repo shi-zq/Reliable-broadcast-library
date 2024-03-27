@@ -1,59 +1,100 @@
-import java.io.IOException;
+import java.io.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.MulticastSocket;
-import java.net.UnknownHostException;
-import java.nio.channels.ClosedChannelException;
+import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
 import java.util.Iterator;
 import java.util.Set;
 
-public class MsgReceiver {
-    //classe per ricezione dei messaggi
-    private String multicastAddress;
+public class MsgReceiver implements Runnable{
+    private String ip;
+    private int port;
+    private InetAddress broadcast;
+    private DatagramSocket sendSocket;
+    private ByteArrayOutputStream baos;
+    private ObjectOutputStream oos;
+    private SharedResource sharedResource;
+    final int bufferSize = 2048; //1024 riservato per head 1024 riservato per body
 
-    public MsgReceiver(String multicastAddress) {
-        this.multicastAddress = multicastAddress;
+    public MsgReceiver(String ip, int port, InetAddress broadcast) throws IOException {
+        this.ip = ip;
+        this.port = port;
+        this.broadcast = broadcast;
+        this.sendSocket = new DatagramSocket();
+        sendSocket.setBroadcast(true);
+        this.baos = new ByteArrayOutputStream();
+        this.oos = new ObjectOutputStream(baos);
+        this.sharedResource = new SharedResource();
     }
 
-    public void run() {
-        InetAddress ip= null;
-        try {
-            ip = InetAddress.getByName("225.255.255.255");
-        } catch (UnknownHostException ex) {
-            throw new RuntimeException(ex);
-        }
-        DatagramPacket data=new DatagramPacket(inputByte, inputByte.length, ip, 30000);
-        DatagramSocket ms = new DatagramSocket();
-        ms.send(data);
-        ms.close();
-    }
+    public void run(){
+
         try {
             Selector selector = Selector.open();
-
-            ServerSocketChannel serverSocket = ServerSocketChannel.open();
-            serverSocket.bind(new InetSocketAddress("localhost", 55555));
+            DatagramChannel serverSocket = DatagramChannel.open();
+            serverSocket.bind(new InetSocketAddress(port));
             serverSocket.configureBlocking(false);
             serverSocket.register(selector, SelectionKey.OP_READ);
-            System.out.println("MsgReceiver ready at port 55555" );
+            System.out.println("server ready");
             while(true) {
                 try {
                     selector.select();
-                } catch (IOException e) {
-                    System.out.println("seletore fallito");
+                }
+                catch (IOException e) {
                     break;
                 }
                 Set<SelectionKey> readyKeys = selector.selectedKeys();
                 Iterator<SelectionKey> iterator = readyKeys.iterator();
-                while (iterator.hasNext()) {
-                    SelectionKey key=iterator.next();
+                while(iterator.hasNext()) {
+                    SelectionKey key = iterator.next();
                     iterator.remove();
+                    try {
+                        if(key.isReadable()) {
+                            DatagramChannel receive = (DatagramChannel)key.channel();
+                            byte[] readBuffer = new byte[bufferSize];
+                            ByteBuffer readData = ByteBuffer.wrap(readBuffer);
+                            receive.receive(readData);
+                            try {
+                                ByteArrayInputStream bais = new ByteArrayInputStream(readData.array());
+                                ObjectInputStream ois = new ObjectInputStream(bais);
+                                ReliableMsg msg =  (ReliableMsg) ois.readObject();
+                                switch(msg.getType()) {
+                                    case("JOIN"):
+                                        HandleJoin(msg);
+                                        break;
+                                    case("WELCOME"):
+                                        HandleWelcome(msg);
+                                }
+
+                            }
+                            catch(IOException | ClassNotFoundException ignored) {
+
+                            }
+                        }
+                    }
+                    catch(IOException ignored) {
+
+                    }
                 }
+
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+
+        }
+        catch(IOException ignored) {
+
         }
     }
+
+    public void HandleJoin(ReliableMsg msg) {
+        msg.print();
+
+    }
+    public void HandleWelcome(ReliableMsg msg) {
+
+    }
+
 }
