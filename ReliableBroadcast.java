@@ -15,8 +15,13 @@ public class ReliableBroadcast {
         MsgReceiver msgr = new MsgReceiver(send, InetAddress.getLocalHost().toString(), 5000, InetAddress.getByName("255.255.255.255"));
         Thread threadserver = new Thread(msgr);
         threadserver.start();
+        send.setTrue();
         Thread.sleep(5000);
         send.sendJoin();
+        send.sendAlive();
+        Thread.sleep(5000);
+        send.sendAlive();
         System.out.println("sended");
+
     }
 }

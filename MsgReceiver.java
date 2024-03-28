@@ -15,9 +15,7 @@ public class MsgReceiver implements Runnable{
     private String ip;
     private int port;
     private InetAddress broadcast;
-    private DatagramSocket sendSocket;
-    private ByteArrayOutputStream baos;
-    private ObjectOutputStream oos;
+    private String state;
     final int bufferSize = 2048; //1024 riservato per head 1024 riservato per body
 
     public MsgReceiver(MsgSender msgSender, String ip, int port, InetAddress broadcast) throws IOException {
@@ -25,10 +23,7 @@ public class MsgReceiver implements Runnable{
         this.ip = ip;
         this.port = port;
         this.broadcast = broadcast;
-        this.sendSocket = new DatagramSocket();
-        sendSocket.setBroadcast(true);
-        this.baos = new ByteArrayOutputStream();
-        this.oos = new ObjectOutputStream(baos);
+        this.state = "new";
     }
 
     public void run(){
@@ -52,57 +47,55 @@ public class MsgReceiver implements Runnable{
                 while(iterator.hasNext()) {
                     SelectionKey key = iterator.next();
                     iterator.remove();
-                    try {
-                        if(key.isReadable()) {
-                            DatagramChannel receive = (DatagramChannel)key.channel();
-                            byte[] readBuffer = new byte[bufferSize];
-                            ByteBuffer readData = ByteBuffer.wrap(readBuffer);
-                            receive.receive(readData);
+                        if (key.isReadable()) {
                             try {
+                                DatagramChannel receiver = (DatagramChannel) key.channel();
+                                ByteBuffer readData = ByteBuffer.allocate(bufferSize);
+                                receiver.receive(readData);
                                 ByteArrayInputStream bais = new ByteArrayInputStream(readData.array());
                                 ObjectInputStream ois = new ObjectInputStream(bais);
-                                ReliableMsg msg =  (ReliableMsg) ois.readObject();
+                                ReliableMsg msg = (ReliableMsg) ois.readObject();
                                 msg.print();
-                                switch(msg.getType()) {
+                                switch (msg.getType()) {
                                     //加case+加handle
-                                    case("JOIN"):
+                                    case ("JOIN"):
                                         handleJoin(msg);
                                         break;
-                                    case("END"):
+                                    case ("END"):
                                         handleEnd(msg);
                                         break;
+                                    case ("ALIVE"):
+                                        handleAlive(msg);
+                                        break;
+                                    case ("CHANGE"):
+                                        handleChange(msg);
                                     default:
                                         break;
                                 }
 
-                            }
-                            catch(IOException | ClassNotFoundException ignored) {
+                            } catch (IOException | ClassNotFoundException ignored) {
+                                System.out.println("swtich error");
 
                             }
                         }
-                    }
-                    catch(IOException ignored) {
-
-                    }
                 }
 
             }
 
         }
         catch(IOException ignored) {
-
+            System.out.println("selectr error");
         }
     }
 
     public void handleJoin(ReliableMsg msg) {
         if(!msg.getFrom().equals(ip)) {
             //only join from ip different, meaningless join msg from myself
-            switch (msgSender.getState()) {
+            switch ("") {
                 case("new"):
                     //ignored
                     break;
                 case("joined"):
-                    msgSender.setChange();
                     break;
                 case("change"):
                     //ignored
@@ -113,6 +106,16 @@ public class MsgReceiver implements Runnable{
 
     public void handleEnd(ReliableMsg msg) {
 
+    }
+
+    public void handleAlive(ReliableMsg msg) {
+    }
+
+    public void handleChange(ReliableMsg msg) {
+
+    }
+    public boolean checkIp(String ip) {
+        return this.ip.equals(ip);
     }
 
 }
