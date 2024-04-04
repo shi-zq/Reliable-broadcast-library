@@ -3,9 +3,9 @@ import java.io.Serializable;
 public class ReliableMsg implements Serializable {
     private String type;
     private String from;
-    private long timestamp;
+    private Long timestamp;
     private String body;
-    public ReliableMsg(String type, String from, long timestamp, String body) {
+    public ReliableMsg(String type, String from, Long timestamp, String body) {
         this.type = type;
         this.from = from;
         this.timestamp = timestamp;
@@ -35,6 +35,13 @@ public class ReliableMsg implements Serializable {
         this.from = from;
     }
 
+    public Long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(Long timestamp) {
+        this.timestamp = timestamp;
+    }
     public String getBody() {
         return body;
     }
@@ -42,4 +49,5 @@ public class ReliableMsg implements Serializable {
     public void setBody(String body) {
         this.body = body;
     }
+    //add part to extract information from body of the msg
 }

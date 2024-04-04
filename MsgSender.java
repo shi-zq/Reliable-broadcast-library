@@ -57,6 +57,20 @@ public class MsgSender {
             }
         }
     }
+
+    public synchronized  void sendWelcome(String ip, Long time) {
+        try {
+            ReliableMsg join = new ReliableMsg("WELCOME", this.ip, System.currentTimeMillis(), ip + System.lineSeparator() + time);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(join);
+            byte[] joinByte = baos.toByteArray();
+            DatagramPacket packet = new DatagramPacket(joinByte, joinByte.length, broadcast, port);
+            sendSocket.send(packet);
+        }
+        catch (IOException ignored) {
+        }
+    }
     public synchronized boolean getState() {
         return sending;
     }
@@ -70,7 +84,7 @@ public class MsgSender {
     }
 
     public synchronized void update(String ip, Long time) {
-
+        this.memberMap.replace(ip,time);
     }
     public synchronized String checkTimestamp() {
         Long now = System.currentTimeMillis();
@@ -82,4 +96,5 @@ public class MsgSender {
         }
         return null;
     }
+
 }

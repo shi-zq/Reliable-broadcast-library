@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -18,12 +19,22 @@ public class MsgReceiver implements Runnable{
     private String state;
     final int bufferSize = 2048; //1024 riservato per head 1024 riservato per body
 
-    public MsgReceiver(MsgSender msgSender, String ip, int port, InetAddress broadcast) throws IOException {
+    private Long lastTimestamp;
+    private String lastIp;
+
+    private HashMap<String, Boolean> memberAck;
+
+    private SharedArraylist sharedlist;
+
+    public MsgReceiver(MsgSender msgSender, String ip, int port, InetAddress broadcast, SharedArraylist sharedList) throws IOException {
         this.msgSender = msgSender;
         this.ip = ip;
         this.port = port;
         this.broadcast = broadcast;
         this.state = "new";
+        lastTimestamp = 0L;
+        lastIp = null;
+        this.sharedlist = sharedList;
     }
 
     public void run(){
@@ -36,6 +47,9 @@ public class MsgReceiver implements Runnable{
             serverSocket.register(selector, SelectionKey.OP_READ);
             System.out.println("server ready");
             while(true) {
+                if(this.state.equals("new")) {
+                    msgSender.sendJoin();
+                }
                 try {
                     selector.select();
                 }
@@ -56,10 +70,14 @@ public class MsgReceiver implements Runnable{
                                 ObjectInputStream ois = new ObjectInputStream(bais);
                                 ReliableMsg msg = (ReliableMsg) ois.readObject();
                                 msg.print();
+                                msgSender.update(msg.getFrom(), msg.getTimestamp());
                                 switch (msg.getType()) {
                                     //加case+加handle
                                     case ("JOIN"):
                                         handleJoin(msg);
+                                        break;
+                                    case("WELCOME"):
+                                        handleWelcome(msg);
                                         break;
                                     case ("END"):
                                         handleEnd(msg);
@@ -96,8 +114,19 @@ public class MsgReceiver implements Runnable{
                     //ignored
                     break;
                 case("joined"):
+                    msgSender.sendWelcome(msg.getFrom(), msg.getTimestamp());
+                    this.setAddMember();
+                    this.ip = msg.getFrom();
+                    this.lastTimestamp = msg.getTimestamp();
                     break;
-                case("change"):
+                case("AddMember"):
+                    if(msg.getTimestamp() < this.lastTimestamp) {
+                        msgSender.sendWelcome(msg.getFrom(), msg.getTimestamp());
+                        this.ip = msg.getFrom();
+                        this.lastTimestamp = msg.getTimestamp();
+                    }
+                    break;
+                case("removemember"):
                     //ignored
                     break;
             }
@@ -114,8 +143,47 @@ public class MsgReceiver implements Runnable{
     public void handleChange(ReliableMsg msg) {
 
     }
+
+    public void handleWelcome(ReliableMsg msg) {
+        if(!msg.getFrom().equals(ip)) {
+            //only join from ip different, meaningless join msg from myself
+            switch ("") {
+                case("new"):
+                    //ignored
+                    break;
+                case("joined"):
+                    msgSender.sendWelcome(msg.getFrom(), msg.getTimestamp());
+                    this.setAddMember();
+                    this.ip = msg.getFrom();
+                    this.lastTimestamp = msg.getTimestamp();
+                    break;
+                case("AddMember"):
+                    if(msg.getTimestamp() < this.lastTimestamp) {
+                        msgSender.sendWelcome(msg.getFrom(), msg.getTimestamp());
+                        this.ip = msg.getFrom();
+                        this.lastTimestamp = msg.getTimestamp();
+                    }
+                    else {
+
+                    }
+                    break;
+                case("removemember"):
+                    //ignored
+                    break;
+            }
+        }
+
+    }
     public boolean checkIp(String ip) {
         return this.ip.equals(ip);
     }
+    public void setJoined(){
+        this.state = "joined";
+        this.msgSender.setTrue();
+    }
 
+    public void setAddMember() {
+        this.state = "addMember";
+        this.msgSender.setFalse();
+    }
 }
