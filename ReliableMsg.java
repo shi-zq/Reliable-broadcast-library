@@ -5,17 +5,20 @@ public class ReliableMsg implements Serializable {
     private String from;
     private Long timestamp;
     private String body;
-    public ReliableMsg(String type, String from, Long timestamp, String body) {
+    private int scalarclock; // part of the logical clock
+    public ReliableMsg(String type, String from, Long timestamp, String body, int scalarclock) {
         this.type = type;
         this.from = from;
         this.timestamp = timestamp;
         this.body = body;
+        this.scalarclock = scalarclock;
     }
 
     public void print() {
         System.out.println("type: " + type);
         System.out.println("from: " + from);
         System.out.println("timestamp: " + timestamp);
+        System.out.println("scalarlock: " + scalarclock);
         System.out.println("body: " + body);
     }
 

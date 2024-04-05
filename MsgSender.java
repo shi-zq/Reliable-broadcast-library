@@ -17,7 +17,8 @@ public class MsgSender {
     private InetAddress broadcast;
     private DatagramSocket sendSocket;
     private HashMap<String, Long> memberMap;
-    public MsgSender(String ip, int port, InetAddress broadcast) throws IOException{
+    private LogicalClock clock;
+    public MsgSender(String ip, int port, InetAddress broadcast, LogicalClock clock) throws IOException{
         this.view = 0;
         this.ip = ip;
         this.port = port;
@@ -26,6 +27,7 @@ public class MsgSender {
         sendSocket.setBroadcast(true);
         this.sending = false;
         this.memberMap = new HashMap<String, Long>();
+        this.clock = clock;
     }
     public synchronized void sendJoin() {
         try {
@@ -69,6 +71,60 @@ public class MsgSender {
             sendSocket.send(packet);
         }
         catch (IOException ignored) {
+        }
+    }
+    public synchronized void sendMsg(String content) {
+        if(sending) {
+            try {
+                clock.incrementScalarclock();
+                ReliableMsg message = new ReliableMsg("MSG", this.ip, System.currentTimeMillis(), content, clock.getScalarclock());
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(baos);
+                oos.writeObject(message);
+                byte[] messageByte = baos.toByteArray();
+                DatagramPacket packet = new DatagramPacket(messageByte, messageByte.length, broadcast, port);
+                sendSocket.send(packet);
+                sendACK(content);
+            }
+            catch (IOException ignored) {
+                System.out.println("sendMsg");
+            }
+        }
+    }
+
+    public synchronized void sendACK(String acknowledgecontent) {
+        if(sending) {
+            try {
+                clock.incrementScalarclock();
+                ReliableMsg ack = new ReliableMsg("ACK", this.ip, System.currentTimeMillis(), acknowledgecontent, clock.getScalarclock());
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(baos);
+                oos.writeObject(ack);
+                byte[] ackByte = baos.toByteArray();
+                DatagramPacket packet = new DatagramPacket(ackByte, ackByte.length, broadcast, port);
+                sendSocket.send(packet);
+            }
+            catch (IOException ignored) {
+                System.out.println("sendACK");
+            }
+        }
+    }
+
+    public synchronized void sendLeave() {
+        if(sending) {
+            try {
+                clock.incrementScalarclock();
+                ReliableMsg leave = new ReliableMsg("LEAVE", this.ip, System.currentTimeMillis(), "I leaved.", clock.getScalarclock());
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(baos);
+                oos.writeObject(leave);
+                byte[] leaveByte = baos.toByteArray();
+                DatagramPacket packet = new DatagramPacket(leaveByte, leaveByte.length, broadcast, port);
+                sendSocket.send(packet);
+            }
+            catch (IOException ignored) {
+                System.out.println("sendLeave");
+            }
         }
     }
     public synchronized boolean getState() {
