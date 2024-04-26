@@ -6,8 +6,10 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class MsgSender {
     private int view;
@@ -18,6 +20,7 @@ public class MsgSender {
     private DatagramSocket sendSocket;
     private HashMap<String, Long> memberMap;
     private LogicalClock clock;
+    
     public MsgSender(String ip, int port, InetAddress broadcast, LogicalClock clock) throws IOException{
         this.view = 0;
         this.ip = ip;
@@ -129,6 +132,10 @@ public class MsgSender {
     }
     public synchronized boolean getState() {
         return sending;
+    }
+
+    public synchronized HashSet<String> getMember() {
+        return (HashSet<String>) this.memberMap.keySet();
     }
 
     public synchronized void setTrue() {

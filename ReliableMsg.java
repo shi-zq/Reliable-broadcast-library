@@ -3,12 +3,14 @@ import java.util.Objects;
 
 public class ReliableMsg implements Serializable {
     private String type;
+    private String creator; //who create the original message
     private String from;
     private Long timestamp;
     private String body;
     private String index; // part of the logical clock
-    public ReliableMsg(String type, String from, Long timestamp, String body, String index) {
+    public ReliableMsg(String type, String creator, String from, Long timestamp, String body, String index) {
         this.type = type;
+        this.creator = creator;
         this.from = from;
         this.timestamp = timestamp;
         this.body = body;
@@ -17,6 +19,7 @@ public class ReliableMsg implements Serializable {
 
     public void print() {
         System.out.println("type: " + type);
+        System.out.println("creator: " + creator);
         System.out.println("from: " + from);
         System.out.println("timestamp: " + timestamp);
         System.out.println("index: " + index);
@@ -25,6 +28,10 @@ public class ReliableMsg implements Serializable {
 
     public String getType() {
         return type;
+    }
+
+    public String getCreator() {
+        return creator;
     }
 
     public String getFrom() {
@@ -43,19 +50,5 @@ public class ReliableMsg implements Serializable {
         return this.index;
     }
 
-    public int hashCode() {
-        return Objects.hashCode(this.from + this.index);
-    }
-
-    public boolean equals(Object o) {
-        if (o == null) {
-            return false;
-        }
-        if (o.getClass() != this.getClass()) {
-            return false;
-        }
-        ReliableMsg tmp = (ReliableMsg) o;
-        return this.index.equals(tmp.getIndex()) && this.from.equals(tmp.getFrom());
-    }
 
 }
