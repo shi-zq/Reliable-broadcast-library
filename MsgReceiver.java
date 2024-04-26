@@ -17,7 +17,7 @@ public class MsgReceiver implements Runnable{
     private int port;
     private InetAddress broadcast;
     private String state;
-    final int bufferSize = 2048; //1024 riservato per head 1024 riservato per body
+    final int bufferSize = 4096; //lenght of message
 
     private Long lastTimestamp;
     private String lastIp;
@@ -38,7 +38,6 @@ public class MsgReceiver implements Runnable{
     }
 
     public void run(){
-
         try {
             Selector selector = Selector.open();
             DatagramChannel serverSocket = DatagramChannel.open();
@@ -48,12 +47,13 @@ public class MsgReceiver implements Runnable{
             System.out.println("server ready");
             while(true) {
                 if(this.state.equals("new")) {
-                    msgSender.sendJoin();
+                    lastTimestamp = msgSender.sendJoin();
                 }
                 try {
                     selector.select();
                 }
                 catch (IOException e) {
+                    System.out.println("Selector error");
                     break;
                 }
                 Set<SelectionKey> readyKeys = selector.selectedKeys();
@@ -114,15 +114,15 @@ public class MsgReceiver implements Runnable{
                     //ignored
                     break;
                 case("joined"):
-                    msgSender.sendWelcome(msg.getFrom(), msg.getTimestamp());
+                    msgSender.sendWelcome(msg.getCreator(), msg.getTimestamp());
                     this.setAddMember();
-                    this.ip = msg.getFrom();
+                    this.ip = msg.getCreator();
                     this.lastTimestamp = msg.getTimestamp();
                     break;
-                case("AddMember"):
-                    if(msg.getTimestamp() < this.lastTimestamp) {
-                        msgSender.sendWelcome(msg.getFrom(), msg.getTimestamp());
-                        this.ip = msg.getFrom();
+                case("addmember"):
+                    if(msg.getTimestamp() < this.lastTimestamp) { //there a earler join so who come first who join
+                        msgSender.sendWelcome(msg.getCreator(), msg.getTimestamp());
+                        this.ip = msg.getCreator();
                         this.lastTimestamp = msg.getTimestamp();
                     }
                     break;
@@ -133,6 +133,30 @@ public class MsgReceiver implements Runnable{
         }
     }
 
+    public void handleWelcome(ReliableMsg msg) {
+        if(!msg.getFrom().equals(ip)) {
+            switch ("") {
+                case("new"):
+                    //
+                    break;
+                case("joined"):
+                    msgSender.sendWelcome(msg.getFrom(), msg.getTimestamp());
+                    this.setAddMember();
+                    this.lastIp = msg.getCreator();
+                    this.lastTimestamp = msg.getTimestamp();
+                    break;
+                case("addmember"):
+                    if(msg.getTimestamp() < this.lastTimestamp) {
+                        msgSender.sendWelcome(msg.getFrom(), msg.getTimestamp());
+                        this.ip = msg.getCreator();
+                        this.lastTimestamp = msg.getTimestamp();
+                    }
+                    break;
+                case("removemember"):
+                    //ignored
+                    break;
+            }
+        }
     public void handleEnd(ReliableMsg msg) {
 
     }
@@ -144,35 +168,6 @@ public class MsgReceiver implements Runnable{
 
     }
 
-    public void handleWelcome(ReliableMsg msg) {
-        if(!msg.getFrom().equals(ip)) {
-            //only join from ip different, meaningless join msg from myself
-            switch ("") {
-                case("new"):
-                    //ignored
-                    break;
-                case("joined"):
-                    msgSender.sendWelcome(msg.getFrom(), msg.getTimestamp());
-                    this.setAddMember();
-                    this.ip = msg.getFrom();
-                    this.lastTimestamp = msg.getTimestamp();
-                    break;
-                case("AddMember"):
-                    if(msg.getTimestamp() < this.lastTimestamp) {
-                        msgSender.sendWelcome(msg.getFrom(), msg.getTimestamp());
-                        this.ip = msg.getFrom();
-                        this.lastTimestamp = msg.getTimestamp();
-                    }
-                    else {
-
-                    }
-                    break;
-                case("removemember"):
-                    //ignored
-                    break;
-            }
-        }
-
     }
     public boolean checkIp(String ip) {
         return this.ip.equals(ip);
@@ -183,7 +178,7 @@ public class MsgReceiver implements Runnable{
     }
 
     public void setAddMember() {
-        this.state = "addMember";
+        this.state = "addmember";
         this.msgSender.setFalse();
     }
 }

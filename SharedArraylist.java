@@ -29,6 +29,7 @@ public class SharedArraylist {
         notACKmsg.get(index).ack(msg.getFrom());
         while(!notACKmsg.isEmpty() && notACKmsg.getFirst().missingAck().isEmpty()) {
             ACKmsg.add(notACKmsg.removeFirst().getMsg());
+            //if need ResendACK and ResendMsg add here code
         }
     }
 
