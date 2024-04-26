@@ -1,22 +1,35 @@
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class SharedArraylist {
-    private ArrayList<ReliableMsg> msgBuffer;
+    private HashMap<ReliableMsg, AckMap> notACKmsg;
+    private ArrayList<ReliableMsg> ACKmsg;
+    private String type;
 
-    public SharedArraylist() {
-        this.msgBuffer = new ArrayList<ReliableMsg>();
+    public SharedArraylist(String type) {
+        notACKmsg = new HashMap<>();
+        ACKmsg = new ArrayList<>();
+        this.type = type;
     }
 
     public synchronized ReliableMsg getMsg() {
-        if(msgBuffer.isEmpty()) {
+        if(ACKmsg.isEmpty()) {
             return null;
         }
-        return msgBuffer.removeFirst();
-    }
-    public synchronized void addMsg(ReliableMsg msg) {
-        this.msgBuffer.add(msg);
+        return ACKmsg.removeFirst();
     }
 
+    public synchronized void updateAck(ReliableMsg msg) {
+        AckMap tmp = this.notACKmsg.get(msg);
+        tmp.ack(msg.getFrom());
+        if(tmp.missingAck().isEmpty()) {
+            ACKmsg.add();
+        }
+    }
+
+    public synchronized void addMsg(ReliableMsg) {
+
+    }
     public synchronized boolean isEmpty() {
         return msgBuffer.isEmpty();
     }

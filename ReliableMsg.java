@@ -1,24 +1,25 @@
 import java.io.Serializable;
+import java.util.Objects;
 
 public class ReliableMsg implements Serializable {
     private String type;
     private String from;
     private Long timestamp;
     private String body;
-    private int scalarclock; // part of the logical clock
-    public ReliableMsg(String type, String from, Long timestamp, String body, int scalarclock) {
+    private String index; // part of the logical clock
+    public ReliableMsg(String type, String from, Long timestamp, String body, String index) {
         this.type = type;
         this.from = from;
         this.timestamp = timestamp;
         this.body = body;
-        this.scalarclock = scalarclock;
+        this.index = index;
     }
 
     public void print() {
         System.out.println("type: " + type);
         System.out.println("from: " + from);
         System.out.println("timestamp: " + timestamp);
-        System.out.println("scalarlock: " + scalarclock);
+        System.out.println("index: " + index);
         System.out.println("body: " + body);
     }
 
@@ -26,31 +27,35 @@ public class ReliableMsg implements Serializable {
         return type;
     }
 
-    public void setType(String type) {
-        this.type = type;
-    }
-
     public String getFrom() {
         return from;
-    }
-
-    public void setFrom(String from) {
-        this.from = from;
     }
 
     public Long getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(Long timestamp) {
-        this.timestamp = timestamp;
-    }
     public String getBody() {
         return body;
     }
 
-    public void setBody(String body) {
-        this.body = body;
+    public String getIndex() {
+        return this.index;
     }
-    //add part to extract information from body of the msg
+
+    public int hashCode() {
+        return Objects.hashCode(this.from + this.index);
+    }
+
+    public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+        if (o.getClass() != this.getClass()) {
+            return false;
+        }
+        ReliableMsg tmp = (ReliableMsg) o;
+        return this.index.equals(tmp.getIndex()) && this.from.equals(tmp.getFrom());
+    }
+
 }

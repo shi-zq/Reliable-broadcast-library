@@ -19,9 +19,14 @@ public class LogicalClock {
         return instance;
     }
     
-    // To get scalar clock
+    // To get scalar clock and add
     public synchronized int getScalarclock() {
-        return scalarclock;
+        this.scalarclock++;
+        return scalarclock-1;
+    }
+    // reset the clock
+    public synchronized void reset() {
+        this.scalarclock = 0;
     }
     
     // To update scalar clock

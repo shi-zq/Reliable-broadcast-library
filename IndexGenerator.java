@@ -10,22 +10,29 @@ public class IndexGenerator {
     public String getIndex() {
         switch(type) {
             case ("FIFO"):
-                return logicalClock.getScalarclock();
+                return String.valueOf(logicalClock.getScalarclock());
             case ("CASUAL"):
                 return null;
             case ("TOTAL"):
+                return null;
+            default:
                 return null;
         }
     }
 
-    public void resetIntex() {
+    public void resetIndex() {
         switch(type) {
             case ("FIFO"):
                 logicalClock.reset();
+                break;
             case ("CASUAL"):
                 //return null;
             case ("TOTAL"):
                 //return null;
         }
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 }
