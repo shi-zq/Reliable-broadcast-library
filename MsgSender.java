@@ -18,6 +18,9 @@ public class MsgSender {
     private HashMap<String, Long> memberMap; //current member and last live time
     private IndexGenerator indexGenerator;
 
+    private Long lastJoinTimestamp;
+    private String lastJoinIp;
+
     public MsgSender(String ip, int port, InetAddress broadcast, LogicalClock clock, IndexGenerator indexGenerator) throws IOException{
         this.view = 0;
         this.ip = ip;
@@ -28,12 +31,14 @@ public class MsgSender {
         this.sending = false;
         this.memberMap = new HashMap<String, Long>();
         this.indexGenerator = indexGenerator;
+        this.lastJoinIp = null;
+        this.lastJoinTimestamp = 0L;
     }
 
-    public synchronized Long sendJoin() {
-        Long tmp = System.currentTimeMillis();
+    public synchronized void sendJoin() {
+        this.lastJoinTimestamp = System.currentTimeMillis();
         try {
-            ReliableMsg join = new ReliableMsg("JOIN", ip, ip, tmp, "", "");
+            ReliableMsg join = new ReliableMsg("JOIN", ip, ip, this.lastJoinTimestamp, "", "");
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
             oos.writeObject(join);
@@ -44,7 +49,6 @@ public class MsgSender {
         catch (IOException ignored) {
             System.out.println("sendJoin");
         }
-        return tmp;
     }
 
     public synchronized void sendAlive() {
@@ -62,9 +66,9 @@ public class MsgSender {
         }
     }
 
-    public synchronized void sendEnd(String newIp) {
+    public synchronized void sendEnd() {
         try {
-            ReliableMsg end = new ReliableMsg("END", ip, ip, System.currentTimeMillis(), createMemberList(newIp), "");
+            ReliableMsg end = new ReliableMsg("END", ip, ip, System.currentTimeMillis(), createMemberList(), "");
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
             oos.writeObject(end);
@@ -142,6 +146,9 @@ public class MsgSender {
         if(memberMap.containsKey(ip)) {
             this.memberMap.replace(ip, time);
         }
+        if(ip.equals(lastJoinIp)) {
+            this.lastJoinTimestamp = time;
+        }
     }
 
     public synchronized boolean isMember(String ip) {
@@ -149,20 +156,43 @@ public class MsgSender {
     }
     public synchronized String checkTimestamp() {
         Long now = System.currentTimeMillis();
-        Long range = now - 5000;
         for(String key : memberMap.keySet()) {
-            if(memberMap.get(key) < range) {
+            if(now - memberMap.get(key) < 5000) {
                 return key;
             }
+        }
+        if(now - lastJoinTimestamp < 5000) {
+            return ip;
         }
         return null;
     }
 
-    public String createMemberList(String newIp) {
+    public synchronized void setLast(String ip, Long time) {
+        this.lastJoinIp = ip;
+        this.lastJoinTimestamp = time;
+    }
+
+    public synchronized void clearLast() {
+        this.lastJoinTimestamp = 0L;
+        this.lastJoinIp = null;
+    }
+
+    public synchronized boolean checkLast(String ip, Long time) {
+        if(time < this.lastJoinTimestamp) {
+            this.setLast(ip, time);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    public synchronized String createMemberList() {
         StringBuilder tmp = new StringBuilder(indexGenerator.getType());
         for (Map.Entry<String, Long> entry : memberMap.entrySet()) {
             tmp.append(";").append(entry.getKey());
         }
+        tmp.append(";").append(lastJoinIp);
         return tmp.toString();
 
     }

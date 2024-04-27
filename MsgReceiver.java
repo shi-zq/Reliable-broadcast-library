@@ -17,9 +17,6 @@ public class MsgReceiver implements Runnable{
     private String state;
     final int bufferSize = 4096; //lenght of message
 
-    private Long lastTimestamp;
-    private String lastIp;
-
     private HashMap<String, Boolean> memberAck;
 
     private SharedArraylist sharedlist;
@@ -30,8 +27,6 @@ public class MsgReceiver implements Runnable{
         this.port = port;
         this.broadcast = broadcast;
         this.state = "new";
-        lastTimestamp = 0L;
-        lastIp = null;
         this.sharedlist = sharedList;
     }
 
@@ -45,7 +40,7 @@ public class MsgReceiver implements Runnable{
             System.out.println("server ready");
             while(true) {
                 if(this.state.equals("new")) {
-                    lastTimestamp = msgSender.sendJoin();
+                    msgSender.sendJoin();
                     this.setJoining();
                 }
                 try {
@@ -60,40 +55,38 @@ public class MsgReceiver implements Runnable{
                 while(iterator.hasNext()) {
                     SelectionKey key = iterator.next();
                     iterator.remove();
-                        if (key.isReadable()) {
-                            try {
-                                DatagramChannel receiver = (DatagramChannel) key.channel();
-                                ByteBuffer readData = ByteBuffer.allocate(bufferSize);
-                                receiver.receive(readData);
-                                ByteArrayInputStream bais = new ByteArrayInputStream(readData.array());
-                                ObjectInputStream ois = new ObjectInputStream(bais);
-                                ReliableMsg msg = (ReliableMsg) ois.readObject();
-                                msg.print();
-                                msgSender.update(msg.getFrom(), msg.getTimestamp()); //ALIVE viene gestito daqui
-                                switch (msg.getType()) {
-                                    //加case+加handle
-                                    case ("JOIN"):
-                                        handleJoin(msg);
-                                        break;
-                                    case ("END"):
-                                        handleEnd(msg);
-                                        break;
-                                    case ("ACK"):
-                                        handleACK(msg);
-                                        break;
-                                    default:
-                                        break;
-                                }
-
-                            } catch (IOException | ClassNotFoundException ignored) {
-                                System.out.println("swtich error");
-
+                    if (key.isReadable()) {
+                        try {
+                            DatagramChannel receiver = (DatagramChannel) key.channel();
+                            ByteBuffer readData = ByteBuffer.allocate(bufferSize);
+                            receiver.receive(readData);
+                            ByteArrayInputStream bais = new ByteArrayInputStream(readData.array());
+                            ObjectInputStream ois = new ObjectInputStream(bais);
+                            ReliableMsg msg = (ReliableMsg) ois.readObject();
+                            msg.print();
+                            msgSender.update(msg.getFrom(), msg.getTimestamp()); //ALIVE viene gestito daqui
+                            switch (msg.getType()) {
+                                //加case+加handle
+                                case ("JOIN"):
+                                    handleJoin(msg);
+                                    break;
+                                case ("END"):
+                                    handleEnd(msg);
+                                    break;
+                                case ("ACK"):
+                                    handleACK(msg);
+                                    break;
+                                default:
+                                    break;
                             }
+
+                        } catch (IOException | ClassNotFoundException ignored) {
+                            System.out.println("swtich error");
+
                         }
+                    }
                 }
-
             }
-
         }
         catch(IOException ignored) {
             System.out.println("selectr error");
@@ -106,20 +99,16 @@ public class MsgReceiver implements Runnable{
                 //ignored, from my self or from other
                 break;
             case("joining"):
-                if(msg.getTimestamp() < this.lastTimestamp) {
+                if(msgSender.checkLast(msg.getCreator(), msg.getTimestamp())) {
                     this.setNew();
                 }
                 break;
             case("joined"):
                 this.setAddMember();
-                this.ip = msg.getCreator();
-                this.lastTimestamp = msg.getTimestamp();
+                msgSender.setLast(msg.getCreator(), msg.getTimestamp());
                 break;
             case("addmember"):
-                if(msg.getTimestamp() < this.lastTimestamp) { //there a earler join so who come first who join
-                    this.ip = msg.getCreator();
-                    this.lastTimestamp = msg.getTimestamp();
-                }
+                msgSender.checkLast(msg.getCreator(), msg.getTimestamp());
                 break;
             case("removemember"):
                 //ignored
@@ -128,17 +117,13 @@ public class MsgReceiver implements Runnable{
     }
 
     public void handleEnd(ReliableMsg msg) {
-
-    }
-
-    public void handleACK(ReliableMsg msg) {
-        if(msgSender.isMember(ip)) {
+        if(msgSender.isMember(msg.getFrom())) {
             switch (this.state) {
                 case("new"):
                     //not gonna happen
                     break;
                 case("joining"):
-                    //just ignore
+
                     break;
                 case("joined"):
                     sharedlist.updateAck(msg);
@@ -146,7 +131,7 @@ public class MsgReceiver implements Runnable{
                 case("addmember"):
                     sharedlist.updateAck(msg);
                     if(sharedlist.isEmpty()) {
-                        msgSender.sendEnd(lastIp);
+                        msgSender.sendEnd();
                     }
                     break;
                 case("removemember"):
@@ -156,9 +141,31 @@ public class MsgReceiver implements Runnable{
         }
     }
 
-    public boolean checkIp(String ip) {
-        return this.ip.equals(ip);
+    public void handleACK(ReliableMsg msg) {
+        if(msgSender.isMember(msg.getFrom())) {
+            switch (this.state) {
+                case("new"):
+                    //not gonna happen
+                    break;
+                case("joining"):
+                    //not gonna happen
+                    break;
+                case("joined"):
+                    sharedlist.updateAck(msg);
+                    break;
+                case("addmember"):
+                    sharedlist.updateAck(msg);
+                    if(sharedlist.isEmpty()) {
+                        msgSender.sendEnd();
+                    }
+                    break;
+                case("removemember"):
+                    sharedlist.updateAck(msg);
+                    break;
+            }
+        }
     }
+
 
     public void setNew() {
         this.state = "new";
