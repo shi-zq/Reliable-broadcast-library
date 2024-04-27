@@ -6,6 +6,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 public class MsgSender {
     private int view; //current view
@@ -28,6 +29,7 @@ public class MsgSender {
         this.memberMap = new HashMap<String, Long>();
         this.indexGenerator = indexGenerator;
     }
+
     public synchronized Long sendJoin() {
         Long tmp = System.currentTimeMillis();
         try {
@@ -60,23 +62,23 @@ public class MsgSender {
         }
     }
 
-    public synchronized  void sendWelcome(String creator, Long time) {
+    public synchronized void sendEnd(String newIp) {
         try {
-            ReliableMsg welcome = new ReliableMsg("WELCOME", creator, ip, time, "", "");
+            ReliableMsg end = new ReliableMsg("END", ip, ip, System.currentTimeMillis(), createMemberList(newIp), "");
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(welcome);
-            byte[] joinByte = baos.toByteArray();
-            DatagramPacket packet = new DatagramPacket(joinByte, joinByte.length, broadcast, port);
+            oos.writeObject(end);
+            byte[] messageByte = baos.toByteArray();
+            DatagramPacket packet = new DatagramPacket(messageByte, messageByte.length, broadcast, port);
             sendSocket.send(packet);
         }
         catch (IOException ignored) {
-            System.out.println("sendWelcome");
+            System.out.println("sendEnd");
         }
     }
 
     public synchronized boolean sendMsg(String content) {
-        if(sending) {
+        if(this.sending) {
             try {
                 ReliableMsg message = new ReliableMsg("MSG", ip, ip, System.currentTimeMillis(), content, indexGenerator.getIndex());
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -137,7 +139,13 @@ public class MsgSender {
     }
 
     public synchronized void update(String ip, Long time) {
-        this.memberMap.replace(ip,time);
+        if(memberMap.containsKey(ip)) {
+            this.memberMap.replace(ip, time);
+        }
+    }
+
+    public synchronized boolean isMember(String ip) {
+        return this.memberMap.containsKey(ip);
     }
     public synchronized String checkTimestamp() {
         Long now = System.currentTimeMillis();
@@ -150,4 +158,26 @@ public class MsgSender {
         return null;
     }
 
+    public String createMemberList(String newIp) {
+        StringBuilder tmp = new StringBuilder(indexGenerator.getType());
+        for (Map.Entry<String, Long> entry : memberMap.entrySet()) {
+            tmp.append(";").append(entry.getKey());
+        }
+        return tmp.toString();
+
+    }
 }
+//    public synchronized  void sendWelcome(String creator, Long time) {
+//        try {
+//            ReliableMsg welcome = new ReliableMsg("WELCOME", creator, ip, time, "", "");
+//            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//            ObjectOutputStream oos = new ObjectOutputStream(baos);
+//            oos.writeObject(welcome);
+//            byte[] joinByte = baos.toByteArray();
+//            DatagramPacket packet = new DatagramPacket(joinByte, joinByte.length, broadcast, port);
+//            sendSocket.send(packet);
+//        }
+//        catch (IOException ignored) {
+//            System.out.println("sendWelcome");
+//        }
+//    }

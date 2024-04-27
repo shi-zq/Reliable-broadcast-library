@@ -1,6 +1,4 @@
 import java.io.*;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -48,6 +46,7 @@ public class MsgReceiver implements Runnable{
             while(true) {
                 if(this.state.equals("new")) {
                     lastTimestamp = msgSender.sendJoin();
+                    this.setJoining();
                 }
                 try {
                     selector.select();
@@ -70,23 +69,18 @@ public class MsgReceiver implements Runnable{
                                 ObjectInputStream ois = new ObjectInputStream(bais);
                                 ReliableMsg msg = (ReliableMsg) ois.readObject();
                                 msg.print();
-                                msgSender.update(msg.getFrom(), msg.getTimestamp());
+                                msgSender.update(msg.getFrom(), msg.getTimestamp()); //ALIVE viene gestito daqui
                                 switch (msg.getType()) {
                                     //加case+加handle
                                     case ("JOIN"):
                                         handleJoin(msg);
                                         break;
-                                    case("WELCOME"):
-                                        handleWelcome(msg);
-                                        break;
                                     case ("END"):
                                         handleEnd(msg);
                                         break;
-                                    case ("ALIVE"):
-                                        handleAlive(msg);
+                                    case ("ACK"):
+                                        handleACK(msg);
                                         break;
-                                    case ("CHANGE"):
-                                        handleChange(msg);
                                     default:
                                         break;
                                 }
@@ -107,70 +101,73 @@ public class MsgReceiver implements Runnable{
     }
 
     public void handleJoin(ReliableMsg msg) {
-        if(!msg.getFrom().equals(ip)) {
-            //only join from ip different, meaningless join msg from myself
-            switch ("") {
-                case("new"):
-                    //ignored
-                    break;
-                case("joined"):
-                    msgSender.sendWelcome(msg.getCreator(), msg.getTimestamp());
-                    this.setAddMember();
+        switch (this.state) {
+            case("new"):
+                //ignored, from my self or from other
+                break;
+            case("joining"):
+                if(msg.getTimestamp() < this.lastTimestamp) {
+                    this.setNew();
+                }
+                break;
+            case("joined"):
+                this.setAddMember();
+                this.ip = msg.getCreator();
+                this.lastTimestamp = msg.getTimestamp();
+                break;
+            case("addmember"):
+                if(msg.getTimestamp() < this.lastTimestamp) { //there a earler join so who come first who join
                     this.ip = msg.getCreator();
                     this.lastTimestamp = msg.getTimestamp();
-                    break;
-                case("addmember"):
-                    if(msg.getTimestamp() < this.lastTimestamp) { //there a earler join so who come first who join
-                        msgSender.sendWelcome(msg.getCreator(), msg.getTimestamp());
-                        this.ip = msg.getCreator();
-                        this.lastTimestamp = msg.getTimestamp();
-                    }
-                    break;
-                case("removemember"):
-                    //ignored
-                    break;
-            }
+                }
+                break;
+            case("removemember"):
+                //ignored
+                break;
         }
     }
 
-    public void handleWelcome(ReliableMsg msg) {
-        if(!msg.getFrom().equals(ip)) {
-            switch ("") {
-                case("new"):
-                    //
-                    break;
-                case("joined"):
-                    msgSender.sendWelcome(msg.getFrom(), msg.getTimestamp());
-                    this.setAddMember();
-                    this.lastIp = msg.getCreator();
-                    this.lastTimestamp = msg.getTimestamp();
-                    break;
-                case("addmember"):
-                    if(msg.getTimestamp() < this.lastTimestamp) {
-                        msgSender.sendWelcome(msg.getFrom(), msg.getTimestamp());
-                        this.ip = msg.getCreator();
-                        this.lastTimestamp = msg.getTimestamp();
-                    }
-                    break;
-                case("removemember"):
-                    //ignored
-                    break;
-            }
-        }
     public void handleEnd(ReliableMsg msg) {
 
     }
 
-    public void handleAlive(ReliableMsg msg) {
+    public void handleACK(ReliableMsg msg) {
+        if(msgSender.isMember(ip)) {
+            switch (this.state) {
+                case("new"):
+                    //not gonna happen
+                    break;
+                case("joining"):
+                    //just ignore
+                    break;
+                case("joined"):
+                    sharedlist.updateAck(msg);
+                    break;
+                case("addmember"):
+                    sharedlist.updateAck(msg);
+                    if(sharedlist.isEmpty()) {
+                        msgSender.sendEnd(lastIp);
+                    }
+                    break;
+                case("removemember"):
+                    sharedlist.updateAck(msg);
+                    break;
+            }
+        }
     }
 
-    public void handleChange(ReliableMsg msg) {
-
-    }
-
-    }
     public boolean checkIp(String ip) {
         return this.ip.equals(ip);
+    }
+
+    public void setNew() {
+        this.state = "new";
+        this.msgSender.setFalse();
+    }
+
+    public void setJoining() {
+        this.state = "joining";
+        this.msgSender.setFalse();
     }
     public void setJoined(){
         this.state = "joined";
@@ -182,3 +179,27 @@ public class MsgReceiver implements Runnable{
         this.msgSender.setFalse();
     }
 }
+//    public void handleWelcome(ReliableMsg msg) {
+//        if(!msg.getFrom().equals(ip)) {
+//            switch ("") {
+//                case("new"):
+//                    //
+//                    break;
+//                case("joined"):
+//                    msgSender.sendWelcome(msg.getFrom(), msg.getTimestamp());
+//                    this.setAddMember();
+//                    this.lastIp = msg.getCreator();
+//                    this.lastTimestamp = msg.getTimestamp();
+//                    break;
+//                case("addmember"):
+//                    if(msg.getTimestamp() < this.lastTimestamp) {
+//                        msgSender.sendWelcome(msg.getFrom(), msg.getTimestamp());
+//                        this.ip = msg.getCreator();
+//                        this.lastTimestamp = msg.getTimestamp();
+//                    }
+//                    break;
+//                case("removemember"):
+//                    //ignored
+//                    break;
+//            }
+//        }

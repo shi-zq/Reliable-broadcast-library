@@ -33,6 +33,10 @@ public class SharedArraylist {
         }
     }
 
+    public synchronized boolean isEmpty() {
+        return notACKmsg.isEmpty();
+    }
+
     public synchronized void addMsg(ReliableMsg msg) {
         AckMap tmp = new AckMap(msg, msgSender.getMember());
         switch(type) {
