@@ -43,4 +43,5 @@ join e remove dovrebbe essere simile il processo
 ResendACK e ResendMsg ancora da implementare
 ResendEnd come facciamo?
 Penso che tutto dovrebbe fatto AliveSender che continua invio di ALIVE che sveglia 
-MsgReceiver a fare il controllo dello stato e reinvio in caso di perdita dei dati 
+MsgReceiver a fare il controllo dello stato e reinvio in caso di perdita dei dati
+ACKmap 全错，全部的msg应该在同一个list里直到下一个view刷新吗？还是需要需要重新一个hashmap来记录每个client的最后一个msg
