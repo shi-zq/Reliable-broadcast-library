@@ -14,7 +14,7 @@ public class MsgReceiver implements Runnable {
     private InetAddress broadcast;
     private String state = "new";
     int bufferSize = 4096; //lenght of message
-    private HashMap<String, Boolean> endMap;
+    private HashMap<String, Boolean> endMap = null;
 
     public MsgReceiver(MsgSender msgSender, String ip, int port, InetAddress broadcast) {
         this.msgSender = msgSender;
@@ -113,16 +113,74 @@ public class MsgReceiver implements Runnable {
     }
 
     public void handleEnd(ReliableMsg msg) {
+        String s = msg.getBody();
+        String[] t = s.split(";");
+        HashSet<String> tmp = new HashSet<>(Arrays.asList(t));
         switch (this.state) {
             case ("new"):
                 //ignored
                 break;
             case ("joining"):
-                String s = msg.getBody();
-                String[] t = s.split(";");
-                HashSet<String> tmp = new HashSet<>(Arrays.asList(t));
                 if(tmp.contains(this.ip)) {
-                    this.msgSender.setMemberMap(tmp);
+                    if(this.endMap == null) {
+                        this.msgSender.setMemberMap(tmp);
+                        this.msgSender.sendEnd();
+                        this.endMap.replace(msg.getFrom(), false, true);
+                    }
+                    else {
+                        if (tmp.size() == this.endMap.size()) {
+                            if (tmp.equals(this.endMap.keySet())) {
+                                this.endMap.replace(msg.getFrom(), false, true);
+                            } else {
+                                if (msg.getTimestamp() < msgSender.getLastJoinTimestamp()) {
+                                    this.msgSender.setLastJoin(msg.getFrom(), msg.getTimestamp());
+                                    this.endMap = new HashMap<>();
+                                    for (String a : tmp) {
+                                        this.endMap.put(a, false);
+                                    }
+                                }
+                                this.endMap.replace(msg.getFrom(), false, true);
+                                msgSender.sendEnd();
+                            }
+                        }
+                        if (tmp.size() > this.endMap.size()) {
+                            tmp.remove(this.msgSender.getLastRemoveIp());
+                            tmp.removeAll(this.msgSender.getMember());
+                            ArrayList<String> arrayTmp = new ArrayList<>(tmp);
+                            this.msgSender.setLastJoin(arrayTmp.getFirst(), msg.getTimestamp());
+                            this.endMap = new HashMap<>();
+                            for (String a : tmp) {
+                                this.endMap.put(a, false);
+                            }
+                            this.endMap.replace(msg.getFrom(), false, true);
+                            this.msgSender.setLastJoin(msg.getFrom(), msg.getTimestamp());
+                            msgSender.sendEnd();
+                        } else {
+                            this.endMap.keySet().removeAll(tmp); //back-end and vice versa so we just modify on hashset to change hashmap
+                            this.endMap.keySet().remove(this.msgSender.getLastJoinIp());
+                            ArrayList<String> arrayTmp = new ArrayList<>(this.endMap.keySet());
+                            this.msgSender.setLastRemoveIp(arrayTmp.getFirst());
+                            this.endMap = new HashMap<>();
+                            for (String a : tmp) {
+                                this.endMap.put(a, false);
+                            }
+                            this.endMap.put(msgSender.getLastJoinIp(), false);
+                            this.endMap.replace(msg.getFrom(), false, true);
+
+                            msgSender.sendEnd();
+                        }
+                        boolean done = true;
+                        for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
+                            if (!entry.getValue()) {
+                                done = false;
+                                break;
+                            }
+                        }
+                        if(done) {
+                            this.setJoined();
+                        }
+                        break;
+                    }
                 }
                 if (msg.getTimestamp() < msgSender.getLastJoinTimestamp()) {
                     this.setNew();
@@ -137,16 +195,13 @@ public class MsgReceiver implements Runnable {
                 this.setChange();
                 this.msgSender.setLastJoin(msg.getFrom(), msg.getTimestamp());
                 this.endMap = new HashMap<>();
-                for (String tmp : msgSender.getMember()) {
-                    this.endMap.put(tmp, false);
+                for (String a : msgSender.getMember()) {
+                    this.endMap.put(a, false);
                 }
                 this.endMap.replace(msg.getFrom(), false, true);
                 msgSender.sendEnd();
                 break;
             case ("change"):
-                String s = msg.getBody();
-                String[] t = s.split(";");
-                HashSet<String> tmp = new HashSet<>(Arrays.asList(t));
                 if (tmp.size() == this.endMap.size()) {
                     if (tmp.equals(this.endMap.keySet())) {
                         this.endMap.replace(msg.getFrom(), false, true);
@@ -265,7 +320,9 @@ public class MsgReceiver implements Runnable {
                     //ignored
                     break;
                 case ("joining"):
-                    if
+                    if(this.endMap != null) {
+
+                    }
                     break;
                 case ("joined"):
                     //add here
