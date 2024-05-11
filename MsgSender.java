@@ -20,6 +20,7 @@ public class MsgSender {
 
     private Long lastJoinTimestamp;
     private String lastJoinIp;
+    private String lastRemoveIp;
 
     public MsgSender(String ip, int port, InetAddress broadcast, LogicalClock clock, IndexGenerator indexGenerator) throws IOException{
         this.view = 0;
@@ -31,6 +32,7 @@ public class MsgSender {
         this.sending = false;
         this.memberMap = new HashMap<String, Long>();
         this.indexGenerator = indexGenerator;
+        this.lastRemoveIp = null;
         this.lastJoinIp = null;
         this.lastJoinTimestamp = 0L;
     }
@@ -195,6 +197,18 @@ public class MsgSender {
         tmp.append(";").append(lastJoinIp);
         return tmp.toString();
 
+    }
+
+    public synchronized Long getLastJoinTimestamp() {
+        return this.lastJoinTimestamp;
+    }
+
+    public synchronized String getLastJoinIp() {
+        return this.lastJoinIp;
+    }
+
+    public synchronized String getLastRemoveIp() {
+        return this.lastRemoveIp;
     }
 }
 //    public synchronized  void sendWelcome(String creator, Long time) {
