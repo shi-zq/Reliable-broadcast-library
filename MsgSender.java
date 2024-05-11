@@ -37,6 +37,7 @@ public class MsgSender {
 
     public synchronized void sendJoin() {
         this.lastJoinTimestamp = System.currentTimeMillis();
+        this.lastJoinIp = ip;
         try {
             ReliableMsg join = new ReliableMsg("JOIN", ip, ip, this.lastJoinTimestamp, "", "");
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
