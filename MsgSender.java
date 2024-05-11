@@ -16,13 +16,12 @@ public class MsgSender {
     private InetAddress broadcast; // broadcastaddress
     private DatagramSocket sendSocket; //socket to send msg
     private HashMap<String, Long> memberMap; //current member and last live time
-    private IndexGenerator indexGenerator;
-
     private Long lastJoinTimestamp;
     private String lastJoinIp;
     private String lastRemoveIp;
+    private boolean awareness;
 
-    public MsgSender(String ip, int port, InetAddress broadcast, LogicalClock clock, IndexGenerator indexGenerator) throws IOException{
+    public MsgSender(String ip, int port, InetAddress broadcast, LogicalClock clock) throws IOException{
         this.view = 0;
         this.ip = ip;
         this.port = port;
@@ -31,7 +30,6 @@ public class MsgSender {
         this.sendSocket.setBroadcast(true);
         this.sending = false;
         this.memberMap = new HashMap<String, Long>();
-        this.indexGenerator = indexGenerator;
         this.lastRemoveIp = null;
         this.lastJoinIp = null;
         this.lastJoinTimestamp = 0L;
@@ -169,7 +167,7 @@ public class MsgSender {
         return null;
     }
 
-    public synchronized void setLast(String ip, Long time) {
+    public synchronized void setLastJoin(String ip, Long time) {
         this.lastJoinIp = ip;
         this.lastJoinTimestamp = time;
     }
@@ -210,18 +208,20 @@ public class MsgSender {
     public synchronized String getLastRemoveIp() {
         return this.lastRemoveIp;
     }
+
+    public synchronized void setLastRemoveIp(String lastRemoveIp) {
+        this.lastRemoveIp = lastRemoveIp;
+        awareness = true;
+    }
+
+    public synchronized int getView() {
+        return this.view;
+    }
+
+    public synchronized void setMemberMap(HashSet<String> member) {
+        for(String tmp : member) {
+            this.memberMap.put(tmp, System.currentTimeMillis());
+        }
+    }
+
 }
-//    public synchronized  void sendWelcome(String creator, Long time) {
-//        try {
-//            ReliableMsg welcome = new ReliableMsg("WELCOME", creator, ip, time, "", "");
-//            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//            ObjectOutputStream oos = new ObjectOutputStream(baos);
-//            oos.writeObject(welcome);
-//            byte[] joinByte = baos.toByteArray();
-//            DatagramPacket packet = new DatagramPacket(joinByte, joinByte.length, broadcast, port);
-//            sendSocket.send(packet);
-//        }
-//        catch (IOException ignored) {
-//            System.out.println("sendWelcome");
-//        }
-//    }

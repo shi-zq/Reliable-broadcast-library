@@ -12,21 +12,15 @@ public class MsgReceiver implements Runnable {
     private String ip;
     private int port;
     private InetAddress broadcast;
-    private String state;
-    final int bufferSize = 4096; //lenght of message
-
-    private HashMap<String, Boolean> memberAck;
-
-    private SharedArraylist sharedlist;
+    private String state = "new";
+    int bufferSize = 4096; //lenght of message
     private HashMap<String, Boolean> endMap;
 
-    public MsgReceiver(MsgSender msgSender, String ip, int port, InetAddress broadcast, SharedArraylist sharedList) throws IOException {
+    public MsgReceiver(MsgSender msgSender, String ip, int port, InetAddress broadcast) {
         this.msgSender = msgSender;
         this.ip = ip;
         this.port = port;
         this.broadcast = broadcast;
-        this.state = "new";
-        this.sharedlist = sharedList;
     }
 
     public void run() {
@@ -73,8 +67,12 @@ public class MsgReceiver implements Runnable {
                                     break;
                                 case ("MSG"):
                                     handleMsg(msg);
+                                    break;
                                 case ("ALIVE"):
                                     handleAlive(msg);
+                                    break;
+                                case ("DROP"):
+                                    handleDrop(msg);
                                 default:
                                     break;
                             }
@@ -101,7 +99,7 @@ public class MsgReceiver implements Runnable {
                 break;
             case ("joined"):
                 this.setChange();
-                this.msgSender.setLast(msg.getFrom(), msg.getTimestamp());
+                this.msgSender.setLastJoin(msg.getFrom(), msg.getTimestamp());
                 this.endMap = new HashMap<>();
                 for (String a : msgSender.getMember()) {
                     this.endMap.put(a, false);
@@ -115,68 +113,92 @@ public class MsgReceiver implements Runnable {
     }
 
     public void handleEnd(ReliableMsg msg) {
-        if (msgSender.isMember(msg.getFrom()) &&) {
-            switch (this.state) {
-                case ("new"):
-                    //ignored
-                    break;
-                case ("joining"):
-                    //ignored, maybe chekc if need to reset
-                    break;
-                case ("joined"):
-                    this.setChange();
-                    this.msgSender.setLast(msg.getFrom(), msg.getTimestamp());
-                    this.endMap = new HashMap<>();
-                    for (String tmp : msgSender.getMember()) {
-                        this.endMap.put(tmp, false);
-                    }
-                    this.endMap.replace(msg.getFrom(), false, true);
-                    break;
-                case ("change"):
-                    String s = msg.getBody();
-                    String[] t = s.split(";");
-                    HashSet<String> tmp = new HashSet<>(Arrays.asList(t));
-                    if (tmp.size() == this.endMap.size()) {
-                        if (tmp.equals(this.endMap.keySet())) {
-                            this.endMap.replace(msg.getFrom(), false, true);
-                        } else {
-                            if (msg.getTimestamp() < msgSender.getLastJoinTimestamp()) {
-                                this.msgSender.setLast(msg.getFrom(), msg.getTimestamp());
-                                this.endMap = new HashMap<>();
-                                for (String a : tmp) {
-                                    this.endMap.put(a, false);
-                                }
-                            }
-                            this.endMap.replace(msg.getFrom(), false, true);
-                        }
-                    }
-                    if (tmp.size() > this.endMap.size()) {
-                        tmp.remove(this.msgSender.getLastRemoveIp());
-                        this.endMap = new HashMap<>();
-                        for (String a : tmp) {
-                            this.endMap.put(a, false);
-                        }
+        switch (this.state) {
+            case ("new"):
+                //ignored
+                break;
+            case ("joining"):
+                String s = msg.getBody();
+                String[] t = s.split(";");
+                HashSet<String> tmp = new HashSet<>(Arrays.asList(t));
+                if(tmp.contains(this.ip)) {
+                    this.msgSender.setMemberMap(tmp);
+                }
+                if (msg.getTimestamp() < msgSender.getLastJoinTimestamp()) {
+                    this.setNew();
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }// i am not allowed to join wait 1s and retry
+                }
+                break;
+            case ("joined"):
+                this.setChange();
+                this.msgSender.setLastJoin(msg.getFrom(), msg.getTimestamp());
+                this.endMap = new HashMap<>();
+                for (String tmp : msgSender.getMember()) {
+                    this.endMap.put(tmp, false);
+                }
+                this.endMap.replace(msg.getFrom(), false, true);
+                msgSender.sendEnd();
+                break;
+            case ("change"):
+                String s = msg.getBody();
+                String[] t = s.split(";");
+                HashSet<String> tmp = new HashSet<>(Arrays.asList(t));
+                if (tmp.size() == this.endMap.size()) {
+                    if (tmp.equals(this.endMap.keySet())) {
                         this.endMap.replace(msg.getFrom(), false, true);
                     } else {
-                        this.endMap = new HashMap<>();
-                        for (String a : tmp) {
-                            this.endMap.put(a, false);
+                        if (msg.getTimestamp() < msgSender.getLastJoinTimestamp()) {
+                            this.msgSender.setLastJoin(msg.getFrom(), msg.getTimestamp());
+                            this.endMap = new HashMap<>();
+                            for (String a : tmp) {
+                                this.endMap.put(a, false);
+                            }
                         }
-                        this.endMap.put(msgSender.getLastJoinIp(), false);
                         this.endMap.replace(msg.getFrom(), false, true);
+                        msgSender.sendEnd();
                     }
-                    boolean done = true;
-                    for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
-                        if (!entry.getValue()) {
-                            done = false;
-                            break;
-                        }
+                }
+                if (tmp.size() > this.endMap.size()) {
+                    tmp.remove(this.msgSender.getLastRemoveIp());
+                    tmp.removeAll(this.msgSender.getMember());
+                    ArrayList<String> arrayTmp = new ArrayList<>(tmp);
+                    this.msgSender.setLastJoin(arrayTmp.getFirst(), msg.getTimestamp());
+                    this.endMap = new HashMap<>();
+                    for (String a : tmp) {
+                        this.endMap.put(a, false);
                     }
-                    if(done) {
-                        this.setJoined();
+                    this.endMap.replace(msg.getFrom(), false, true);
+                    this.msgSender.setLastJoin(msg.getFrom(), msg.getTimestamp());
+                    msgSender.sendEnd();
+                } else {
+                    this.endMap.keySet().removeAll(tmp); //back-end and vice versa so we just modify on hashset to change hashmap
+                    this.endMap.keySet().remove(this.msgSender.getLastJoinIp());
+                    ArrayList<String> arrayTmp = new ArrayList<>(this.endMap.keySet());
+                    this.msgSender.setLastRemoveIp(arrayTmp.getFirst());
+                    this.endMap = new HashMap<>();
+                    for (String a : tmp) {
+                        this.endMap.put(a, false);
                     }
-                    break;
-            }
+                    this.endMap.put(msgSender.getLastJoinIp(), false);
+                    this.endMap.replace(msg.getFrom(), false, true);
+
+                    msgSender.sendEnd();
+                }
+                boolean done = true;
+                for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
+                    if (!entry.getValue()) {
+                        done = false;
+                        break;
+                    }
+                }
+                if(done) {
+                    this.setJoined();
+                }
+                break;
         }
     }
 
@@ -199,7 +221,7 @@ public class MsgReceiver implements Runnable {
 //    }// wait rentao
 
     public void handleMsg(ReliableMsg msg) {
-        if (msgSender.isMember(msg.getFrom())) {
+        if (msgSender.isMember(msg.getFrom()) && msg.getView() == this.msgSender.getView()) {
             switch (this.state) {
                 case ("new"):
                     //ignored
@@ -214,14 +236,49 @@ public class MsgReceiver implements Runnable {
                     //add here
                     break;
             }
-        }
+        }//wait rentao
     }
 
     public void handleAlive(ReliableMsg msg) {
+        if (msgSender.isMember(msg.getFrom())) {
+            switch (this.state) {
+                case ("new"):
+                    //ignored
+                    break;
+                case ("joining"):
+                    this.msgSender.update(msg.getFrom(), msg.getTimestamp());
+                    break;
+                case ("joined"):
+                    this.msgSender.update(msg.getFrom(), msg.getTimestamp());
+                    break;
+                case ("change"):
+                    this.msgSender.update(msg.getFrom(), msg.getTimestamp());
+                    break;
+            }
+        }
+    }
 
+    public void handleDrop(ReliableMsg msg) {
+        if (msgSender.isMember(msg.getFrom())) {
+            switch (this.state) {
+                case ("new"):
+                    //ignored
+                    break;
+                case ("joining"):
+                    if
+                    break;
+                case ("joined"):
+                    //add here
+                    break;
+                case ("change"):
+                    //add here
+                    break;
+            }
+        }
     }
     public void setNew() {
         this.state = "new";
+        this.endMap = null;
         this.msgSender.setFalse();
     }
 
@@ -237,6 +294,7 @@ public class MsgReceiver implements Runnable {
 
     public void setJoined() {
         this.state = "joined";
+        this.endMap = null;
         this.msgSender.setTrue();
     }
 
