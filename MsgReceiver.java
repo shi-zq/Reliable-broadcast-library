@@ -275,24 +275,24 @@ public class MsgReceiver implements Runnable {
 //        }
 //    }// wait rentao
 
-    public void handleMsg(ReliableMsg msg) {
-        if (msgSender.isMember(msg.getFrom()) && msg.getView() == this.msgSender.getView()) {
-            switch (this.state) {
-                case ("new"):
-                    //ignored
-                    break;
-                case ("joining"):
-                    //ignored
-                    break;
-                case ("joined"):
-                    //add here
-                    break;
-                case ("change"):
-                    //add here
-                    break;
-            }
-        }//wait rentao
-    }
+//    public void handleMsg(ReliableMsg msg) {
+//        if (msgSender.isMember(msg.getFrom()) && msg.getView() == this.msgSender.getView()) {
+//            switch (this.state) {
+//                case ("new"):
+//                    //ignored
+//                    break;
+//                case ("joining"):
+//                    //ignored
+//                    break;
+//                case ("joined"):
+//                    //add here
+//                    break;
+//                case ("change"):
+//                    //add here
+//                    break;
+//            }
+//        }//wait rentao
+//    }
 
     public void handleAlive(ReliableMsg msg) {
         if (msgSender.isMember(msg.getFrom())) {
