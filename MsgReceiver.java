@@ -64,7 +64,7 @@ public class MsgReceiver implements Runnable {
                                     handleEnd(msg);
                                     break;
                                 case("ACK"):
-                                    //handleACK(msg);
+                                    handleACK(msg);
                                     break;
                                 case("MSG"):
                                     handleMsg(msg);
@@ -100,7 +100,7 @@ public class MsgReceiver implements Runnable {
                 this.setChange();
                 this.msgSender.setLastJoin(msg.getFrom(), msg.getTimestamp());
                 this.endMap = new HashMap<>();
-                for (String a : msgSender.getMember()) {
+                for(String a : msgSender.getMember()) {
                     this.endMap.put(a, false);
                 }
                 this.msgSender.sendEnd();//need add acheker for arraylist
