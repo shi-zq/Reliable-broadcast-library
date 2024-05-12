@@ -103,6 +103,7 @@ public class MsgReceiver implements Runnable {
                 for(String a : msgSender.getMember()) {
                     this.endMap.put(a, false);
                 }
+                this.endMap.put(msg.getFrom(), false);
                 this.msgSender.sendEnd();//need add acheker for arraylist
                 break;
             case("change"):
@@ -122,7 +123,7 @@ public class MsgReceiver implements Runnable {
                 break;
             case("joining"):
                 if(tmp.contains(this.ip)) {
-                    if(this.endMap == null) {
+                    if(this.endMap == null) {// il primo end che ricevo
                         this.msgSender.setMemberMap(tmp);
                         this.msgSender.sendEnd();
                         this.endMap.replace(msg.getFrom(), false, true);
@@ -133,14 +134,14 @@ public class MsgReceiver implements Runnable {
                         }
                         if(tmp.size() < this.endMap.size()) {
                             this.endMap.keySet().removeAll(tmp); //back-end and vice versa so we just modify on hashset to change hashmap
-                            this.endMap.keySet().remove(this.msgSender.getLastJoinIp());
+                            //this.endMap.keySet().remove(this.msgSender.getLastJoinIp());
                             ArrayList<String> arrayTmp = new ArrayList<>(this.endMap.keySet());
                             this.msgSender.setLastRemoveIp(arrayTmp.getFirst());
                             this.endMap = new HashMap<>();
                             for (String a : tmp) {
                                 this.endMap.put(a, false);
                             }
-                            this.endMap.put(msgSender.getLastJoinIp(), false);
+                            //this.endMap.put(msgSender.getLastJoinIp(), false);
                             this.endMap.replace(msg.getFrom(), false, true);
                             msgSender.sendEnd();
                         }
@@ -151,38 +152,53 @@ public class MsgReceiver implements Runnable {
                             }
                         }
                         if(done) {
-                            this.setJoined();
+                            this.setJoined(msg.getType());
                         }
                         break;
                     }
                 }
-                if(msg.getTimestamp() < msgSender.getLastJoinTimestamp()) {
-                    this.setNew();
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }// i am not allowed to join wait 1s and retry
-                }
-                for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
-                    if (!entry.getValue()) {
-                        done = false;
-                        break;
+                else {
+                    if(msg.getTimestamp() < msgSender.getLastJoinTimestamp()) {
+                        this.setNew();
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }// i am not allowed to join wait 1s and retry
                     }
-                }
-                if(done) {
-                    this.setJoined();
                 }
                 break;
             case ("joined"):
-                this.setChange();//need modity check is a remove or a join
-                this.msgSender.setLastJoin(msg.getFrom(), msg.getTimestamp());
-                this.endMap = new HashMap<>();
-                for (String a : msgSender.getMember()) {
-                    this.endMap.put(a, false);
+                this.setChange();
+                if(tmp.size() > this.msgSender.getMember().size()) {
+                    //this a join
+                    tmp.removeAll(this.msgSender.getMember());
+                    ArrayList<String> arrayTmp = new ArrayList<>(tmp);
+                    this.msgSender.setLastJoin(arrayTmp.getFirst(), msg.getTimestamp());
+                    this.endMap = new HashMap<>();
+                    for (String a : tmp) {
+                        this.endMap.put(a, false);
+                    }
+                    this.endMap.put(msgSender.getLastJoinIp(), false);
+                    this.endMap.replace(msg.getFrom(), false, true);
                 }
-                this.endMap.replace(msg.getFrom(), false, true);
-                msgSender.sendEnd();
+                else {
+                    //this a remove
+                    String b = "";
+                    for(String a : this.msgSender.getMember()) {
+                        if(!tmp.contains(a)) {
+                            b = a;
+                            break;
+                        }
+                        this.msgSender.setLastRemoveIp(b);
+                    }
+                    this.endMap = new HashMap<>();
+                    for (String a : tmp) {
+                        this.endMap.put(a, false);
+                    }
+                    this.endMap.replace(msg.getFrom(), false, true);
+                }
+                this.msgSender.sendEnd();//need add acheker for arraylist
                 break;
             case ("change"):
                 if (tmp.size() == this.endMap.size()) {
@@ -195,12 +211,13 @@ public class MsgReceiver implements Runnable {
                             for (String a : tmp) {
                                 this.endMap.put(a, false);
                             }
+                            this.endMap.replace(msg.getFrom(), false, true);
+                            msgSender.sendEnd();
                         }
-                        this.endMap.replace(msg.getFrom(), false, true);
-                        msgSender.sendEnd();
                     }
                 }
                 if(tmp.size() > this.endMap.size()) {
+                    //ho fatto un remove e ho ricevuto un join
                     tmp.remove(this.msgSender.getLastRemoveIp());
                     tmp.removeAll(this.msgSender.getMember());
                     ArrayList<String> arrayTmp = new ArrayList<>(tmp);
@@ -210,10 +227,10 @@ public class MsgReceiver implements Runnable {
                         this.endMap.put(a, false);
                     }
                     this.endMap.replace(msg.getFrom(), false, true);
-                    this.msgSender.setLastJoin(msg.getFrom(), msg.getTimestamp());
                     msgSender.sendEnd();
                 }
                 else {
+                    //ho fatto un join e ho ricevuto un remove
                     this.endMap.keySet().removeAll(tmp); //back-end and vice versa so we just modify on hashset to change hashmap
                     this.endMap.keySet().remove(this.msgSender.getLastJoinIp());
                     ArrayList<String> arrayTmp = new ArrayList<>(this.endMap.keySet());
@@ -224,7 +241,6 @@ public class MsgReceiver implements Runnable {
                     }
                     this.endMap.put(msgSender.getLastJoinIp(), false);
                     this.endMap.replace(msg.getFrom(), false, true);
-
                     msgSender.sendEnd();
                 }
                 for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
@@ -234,7 +250,7 @@ public class MsgReceiver implements Runnable {
                     }
                 }
                 if(done) {
-                    this.setJoined();
+                    this.setJoined(msg.getType());
                 }
                 break;
         }
@@ -288,7 +304,7 @@ public class MsgReceiver implements Runnable {
                         retry++;
                     }
                     if(retry > 2) {
-                        this.setJoined();
+                        this.setJoined(msg.getType()); // i am alone so i am the member now
                     }
                     this.msgSender.update(msg.getFrom(), msg.getTimestamp());
                     break;
@@ -310,14 +326,43 @@ public class MsgReceiver implements Runnable {
                     break;
                 case ("joining"):
                     if(this.endMap != null) {
-
+                        this.msgSender.setLastRemoveIp(msg.getBody());
+                        this.endMap.keySet().remove(msg.getBody());
+                        boolean done = true;
+                        for (Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
+                            if (!entry.getValue()) {
+                                done = false;
+                                break;
+                            }
+                        }
+                        if(done) {
+                            this.setJoined(msg.getType());
+                        }
                     }
                     break;
                 case ("joined"):
-                    //add here
+                    this.setChange();
+                    this.msgSender.setLastRemoveIp(msg.getBody());
+                    this.endMap = new HashMap<>();
+                    for(String a : msgSender.getMember()) {
+                        this.endMap.put(a, false);
+                    }
+                    this.endMap.remove(msg.getBody(), false);
+                    this.msgSender.sendEnd();//need add acheker for arraylist
                     break;
                 case ("change"):
-                    //add here
+                    this.msgSender.setLastRemoveIpShadow(msg.getBody());
+                    this.endMap.keySet().remove(msg.getBody());
+                    boolean done = true;
+                    for (Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
+                        if (!entry.getValue()) {
+                            done = false;
+                            break;
+                        }
+                    }
+                    if(done) {
+                        this.setJoined(msg.getType());
+                    }
                     break;
             }
         }
@@ -325,13 +370,15 @@ public class MsgReceiver implements Runnable {
     public void setNew() {
         this.state = "new";
         this.endMap = null;
-        this.retry = 0;
         this.msgSender.setFalse();
+        this.retry = 0;
     }
 
     public void setJoining() {
         this.state = "joining";
         this.msgSender.setFalse();
+        this.retry = 0;
+        this.endMap = null;
     }
 
     public void setChange() {
@@ -339,9 +386,10 @@ public class MsgReceiver implements Runnable {
         this.msgSender.setFalse();
     }
 
-    public void setJoined() {
+    public void setJoined(String type) {
         this.state = "joined";
         this.endMap = null;
+        this.msgSender.setType(type);
         this.msgSender.setTrue();
     }
 

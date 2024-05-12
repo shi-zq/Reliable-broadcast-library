@@ -7,6 +7,7 @@ public class AliveSender implements  Runnable{
     public void run() {
         while(!Thread.currentThread().isInterrupted()) {
             msgSender.sendAlive();
+            msgSender.checkTimestamp();
         }
     }
 }
