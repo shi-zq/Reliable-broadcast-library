@@ -22,7 +22,6 @@ public class MsgSender {
     private String lastRemoveIp;
     private boolean awareness;
     private String type;
-    private Long timeout = 5000*2;
 
     public MsgSender(String ip, int port, InetAddress broadcast, String type) throws IOException{
         this.view = 0;
@@ -139,13 +138,13 @@ public class MsgSender {
     public synchronized void checkTimestamp() {
         Long now = System.currentTimeMillis();
         for(String key : memberMap.keySet()) {
-            if(now - memberMap.get(key) < timeout) {
+            if(now - memberMap.get(key) < 5000*2) {
                 if(!key.equals(this.lastRemoveIp)){
                     this.sendDrop(key);
                 }
             }
         }
-        if(now - lastJoinIpAlive < timeout) {
+        if(now - lastJoinIpAlive < 5000*2) {
             if(this.lastJoinIp.equals(this.lastRemoveIp)){
                 this.sendDrop(lastJoinIp);
             }
