@@ -42,96 +42,76 @@ public class MsgSender {
     public synchronized void sendJoin() {
         this.lastJoinTimestamp = System.currentTimeMillis();
         this.lastJoinIp = ip;
+        ReliableMsg join = new ReliableMsg(Constants.MSG_JOIN, ip, this.lastJoinTimestamp, "", type, view, "");
         try {
-            ReliableMsg join = new ReliableMsg("JOIN", ip, this.lastJoinTimestamp, "", type, view, "");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(join);
-            byte[] joinByte = baos.toByteArray();
-            DatagramPacket packet = new DatagramPacket(joinByte, joinByte.length, broadcast, port);
-            sendSocket.send(packet);
-        }
-        catch (IOException ignored) {
-            System.out.println("sendJoin");
+            sendMsgToSocket(join);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
     public synchronized void sendAlive() {
+        ReliableMsg alive = new ReliableMsg(Constants.MSG_ALIVE, ip, System.currentTimeMillis(), "", type, view, "");
         try {
-            ReliableMsg alive = new ReliableMsg("ALIVE", ip, System.currentTimeMillis(), "", type, view, "");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(alive);
-            byte[] aliveByte = baos.toByteArray();
-            DatagramPacket packet = new DatagramPacket(aliveByte, aliveByte.length, broadcast, port);
-            sendSocket.send(packet);
-        }
-        catch (IOException ignored) {
-            System.out.println("sendAlive");
+            sendMsgToSocket(alive);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
     public synchronized void sendEnd() {
+        ReliableMsg end = new ReliableMsg(Constants.MSG_END, ip, System.currentTimeMillis(), "", type, view, createMemberList());
         try {
-            ReliableMsg end = new ReliableMsg("END", ip, System.currentTimeMillis(), "", type, view, createMemberList());
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(end);
-            byte[] messageByte = baos.toByteArray();
-            DatagramPacket packet = new DatagramPacket(messageByte, messageByte.length, broadcast, port);
-            sendSocket.send(packet);
-        }
-        catch (IOException ignored) {
-            System.out.println("sendEnd");
+            sendMsgToSocket(end);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
     public synchronized boolean sendMsg(String content) {
         if(this.sending) {
+            ReliableMsg message = new ReliableMsg(Constants.MSG, ip, System.currentTimeMillis(), "index", type, view, content);
             try {
-                ReliableMsg message = new ReliableMsg("MSG", ip, System.currentTimeMillis(), "index", type, view, content);
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ObjectOutputStream oos = new ObjectOutputStream(baos);
-                oos.writeObject(message);
-                byte[] messageByte = baos.toByteArray();
-                DatagramPacket packet = new DatagramPacket(messageByte, messageByte.length, broadcast, port);
-                sendSocket.send(packet);
-                return true;
-            }
-            catch (IOException ignored) {
-                System.out.println("sendMsg");
+                sendMsgToSocket(message);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
         return false;
     }
 
     public synchronized void sendACK(String creator, String index, Long timestamp) {
+        ReliableMsg ack = new ReliableMsg(Constants.MSG_ACK, this.ip, timestamp, "index", type, view, "");
         try {
-            ReliableMsg ack = new ReliableMsg("ACK", this.ip, timestamp, "index", type, view, "");
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(ack);
-            byte[] ackByte = baos.toByteArray();
-            DatagramPacket packet = new DatagramPacket(ackByte, ackByte.length, broadcast, port);
-            sendSocket.send(packet);
-        }
-        catch (IOException ignored) {
-            System.out.println("sendACK");
+            sendMsgToSocket(ack);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
     public synchronized void sendDrop(String ip) {
+        ReliableMsg drop = new ReliableMsg(Constants.MSG_DROP, this.ip, System.currentTimeMillis(), "index", type, view, ip);
         try {
-            ReliableMsg drop = new ReliableMsg("DROP", this.ip, System.currentTimeMillis(), "index", type, view, ip);
+            sendMsgToSocket(drop);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Extract the socket sending part for logging
+     * */
+    public synchronized void sendMsgToSocket(ReliableMsg msg) throws IOException {
+        try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(drop);
+            oos.writeObject(msg);
             byte[] leaveByte = baos.toByteArray();
             DatagramPacket packet = new DatagramPacket(leaveByte, leaveByte.length, broadcast, port);
             sendSocket.send(packet);
         }
         catch (IOException ignored) {
-            System.out.println("sendLeave");
+            System.out.println("error " + ignored.toString());
         }
     }
 
@@ -241,4 +221,7 @@ public class MsgSender {
         this.type = type;
     }
 
+    public synchronized void updateView(int view) {
+        this.view = view+1;
+    }
 }
