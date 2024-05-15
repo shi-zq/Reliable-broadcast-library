@@ -1,7 +1,0 @@
-[2024-05-14 12:48:56] :msg type : ALIVE , index :  , index type : ALIVE , from : 127.0.0.1 , view : 0 , body : 
-[2024-05-14 12:52:43] :msg type : ALIVE , index :  , index type : ALIVE , from : 127.0.0.1 , view : 0 , body : 
-[2024-05-14 19:05:29] :msg type : ALIVE , index :  , index type : ALIVE , from : 127.0.0.1 , view : 0 , body : 
-[2024-05-14 20:20:33 joining] :msg type : JOIN , index :  , index type : ALIVE , from : 127.0.0.1 , view : 0 , body : 
-[2024-05-14 20:22:30 joining] :msg type : JOIN , index :  , index type : ALIVE , from : 127.0.0.1 , view : 0 , body : 
-[2024-05-14 20:23:31 joining] :msg type : JOIN , index :  , index type : ALIVE , from : 127.0.0.1 , view : 0 , body : 
-[2024-05-14 22:02:45 joining] :msg type : JOIN , index :  , index type : ALIVE , from : 127.0.0.1 , view : 0 , body : 

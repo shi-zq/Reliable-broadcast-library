@@ -3,7 +3,7 @@ public class LogicalClock {
     private final String processId;
     
     // To create a singleton logical clock.
-    private LogicalClock(String processId) {
+    LogicalClock(String processId) {
         this.scalarclock = 0;
         this.processId = processId;
     }

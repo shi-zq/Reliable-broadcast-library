@@ -2,7 +2,6 @@ import java.io.*;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -40,13 +39,12 @@ public class MsgLogger {
         PrintWriter printWriter = new PrintWriter(new FileOutputStream(file, true /* append = true */));
         String info = "[" + timeFormat(msg.getTimestamp()) + " " + state + "] :"
                 + "msg type : " + msg.getType() + " , "
-                + "index : " + msg.getIndex() + " , "
-                + "index type : " + msg.getIndexType() + " , "
                 + "from : " + msg.getFrom() + " , "
                 + "view : " + msg.getView() + " , "
                 + "body : " + msg.getBody()
                 + "\n";
         printWriter.print(info);
+        System.out.println(info);
         printWriter.close();
     }
 

@@ -2,38 +2,51 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 
 public class ReliableBroadcast {
     private AliveSender aliveSender;
     private MsgReceiver msgReceiver;
     private MsgSender msgSender;
+    private MessageBuffer messageBuffer;
+    private LogicalClock clock;
 
     public ReliableBroadcast() throws IOException {
-        this.msgSender = new MsgSender(InetAddress.getLocalHost().getHostAddress(), 5000, InetAddress.getByName("255.255.255.255"), "FIFO");
+        this.messageBuffer = new MessageBuffer();
+        this.clock = new LogicalClock(InetAddress.getLocalHost().getHostAddress());
+        this.msgSender = new MsgSender(InetAddress.getLocalHost().getHostAddress(), 5000, InetAddress.getByName("255.255.255.255"), clock);
         this.aliveSender = new AliveSender(msgSender);
-        this.msgReceiver = new MsgReceiver(msgSender, InetAddress.getLocalHost().getHostAddress(), 5000, InetAddress.getByName("255.255.255.255"));
+        this.msgReceiver = new MsgReceiver(msgSender, InetAddress.getLocalHost().getHostAddress(), 5000, messageBuffer, clock);
+        System.out.println("dfa");
+        msgReceiver.run();
+        aliveSender.run();
     }
 
     public boolean sendMsg(String msg) {
         return this.msgSender.sendMsg(msg);
     }
 
-    public ReliableMsg getMsg() {
-        return new ReliableMsg(Constants.MSG, "ip", System.currentTimeMillis(), "index", "type", 0, "content");
+    public void getMsg() {
+        messageBuffer.delivery();
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException {
-        FileWriter fileWriter = new FileWriter("log.txt");
-        PrintWriter printWriter = new PrintWriter(fileWriter);
-        printWriter.print("Some String");
-        printWriter.printf("Product name is %s and its price is %d $", "iPhone", 1000);
-        printWriter.close();
+    public static void main(String[] args) {
+        try {
+            MessageBuffer messageBuffer = new MessageBuffer();
+            LogicalClock clock = new LogicalClock(InetAddress.getLocalHost().getHostAddress());
+            MsgSender msgSender = new MsgSender(InetAddress.getLocalHost().getHostAddress(), 80, InetAddress.getByName("255.255.255.255"), clock);
+            AliveSender aliveSender = new AliveSender(msgSender);
+            MsgReceiver msgReceiver = new MsgReceiver(msgSender, InetAddress.getLocalHost().getHostAddress(), 80, messageBuffer, clock);
+            aliveSender.run();
+            System.out.println("run msg receiver");
+            msgReceiver.run();
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        } catch (SocketException e) {
+            throw new RuntimeException(e);
+        }
 
-        // Debug for MsgLogger
-        MsgSender sender = new MsgSender("127.0.0.1", 80, InetAddress.getByName("127.0.0.1"), Constants.MSG_ALIVE);
-        MsgReceiver msgReceiver = new MsgReceiver(sender, "127.0.0.0",80, InetAddress.getByName("127.0.0.0"));
-        msgReceiver.run();
 
     }
 }

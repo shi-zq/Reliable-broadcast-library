@@ -1,23 +1,22 @@
 import java.io.Serializable;
-import java.util.Objects;
 
 public class ReliableMsg implements Serializable {
     private String type;
     private String from;
     private Long timestamp;
-    private String index;
-    private String indexType;
     private int view;
     private String body;
+    private int sequenceNumber;
+    private int scalarclock;
 
-    public ReliableMsg(String type, String from, Long timestamp, String index, String indexType, int view, String body) {
+    public ReliableMsg(String type, String from, Long timestamp, int view, String body, int scalarclock, int sequenceNumber) {
         this.type = type;
         this.from = from;
         this.timestamp = timestamp;
-        this.index = index;
-        this.indexType = indexType;
         this.view = view;
         this.body = body;
+        this.scalarclock = scalarclock;
+        this.sequenceNumber = sequenceNumber;
     }
 
     public String getType() {
@@ -32,19 +31,19 @@ public class ReliableMsg implements Serializable {
         return timestamp;
     }
 
-    public String getIndex() {
-        return index;
-    }
-
-    public String getIndexType() {
-        return indexType;
-    }
-
     public int getView() {
         return view;
     }
 
     public String getBody() {
         return body;
+    }
+    
+    public int getScalarclock() {
+        return scalarclock;
+    }
+    
+    public int getSequenceNumber() {
+        return sequenceNumber;
     }
 }
