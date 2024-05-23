@@ -13,14 +13,16 @@ public class ReliableBroadcast {
     private LogicalClock clock;
 
     public ReliableBroadcast() throws IOException {
+        Running running = new Running();
         this.messageBuffer = new MessageBuffer();
         this.clock = new LogicalClock(InetAddress.getLocalHost().getHostAddress());
         this.msgSender = new MsgSender(InetAddress.getLocalHost().getHostAddress(), 5000, InetAddress.getByName("255.255.255.255"), clock);
-        this.aliveSender = new AliveSender(msgSender);
+        this.aliveSender = new AliveSender(msgSender, true, running);
         this.msgReceiver = new MsgReceiver(msgSender, InetAddress.getLocalHost().getHostAddress(), 5000, messageBuffer, clock);
-        System.out.println("dfa");
-        msgReceiver.run();
-        aliveSender.run();
+        Thread senderThread = new Thread(aliveSender);
+        Thread receiverThread = new Thread(msgReceiver);
+        senderThread.start();
+        receiverThread.start();
     }
 
     public boolean sendMsg(String msg) {
@@ -31,22 +33,8 @@ public class ReliableBroadcast {
         messageBuffer.delivery();
     }
 
-    public static void main(String[] args) {
-        try {
-            MessageBuffer messageBuffer = new MessageBuffer();
-            LogicalClock clock = new LogicalClock(InetAddress.getLocalHost().getHostAddress());
-            MsgSender msgSender = new MsgSender(InetAddress.getLocalHost().getHostAddress(), 80, InetAddress.getByName("255.255.255.255"), clock);
-            AliveSender aliveSender = new AliveSender(msgSender);
-            MsgReceiver msgReceiver = new MsgReceiver(msgSender, InetAddress.getLocalHost().getHostAddress(), 80, messageBuffer, clock);
-            aliveSender.run();
-            System.out.println("run msg receiver");
-            msgReceiver.run();
-        } catch (UnknownHostException e) {
-            throw new RuntimeException(e);
-        } catch (SocketException e) {
-            throw new RuntimeException(e);
-        }
-
+    public static void main(String[] args) throws IOException {
+        ReliableBroadcast t = new ReliableBroadcast();
 
     }
 }

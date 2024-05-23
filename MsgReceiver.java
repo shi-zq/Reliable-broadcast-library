@@ -10,34 +10,37 @@ public class MsgReceiver implements Runnable {
     private MsgSender msgSender;
     private String ip;
     private int port;
-    private String state = "new";
+    private String state;
     private int bufferSize = 4096; //lenght of message
-    private HashMap<String, Boolean> endMap = null;
-    private int retry = 0;
+    private HashMap<String, Boolean> endMap;
+    private int retry;
     private MsgLogger msgLogger = new MsgLogger();
     private MessageBuffer messageBuffer;
     private LogicalClock clock;
+    private boolean debug;
+    private Running running;
 
-    public MsgReceiver(MsgSender msgSender, String ip, int port, MessageBuffer messageBuffer, LogicalClock clock) {
+    public MsgReceiver(MsgSender msgSender, String ip, int port, MessageBuffer messageBuffer, LogicalClock clock, boolean debug, Running running) {
         this.msgSender = msgSender;
         this.ip = ip;
         this.port = port;
         this.messageBuffer = messageBuffer;
         this.clock = clock;
-        System.out.println("done");
+        this.debug = debug;
+        this.running = running;
+        this.setNew();
     }
 
     public void run() {
-        System.out.println("start");
         try {
             Selector selector = Selector.open();
             DatagramChannel serverSocket = DatagramChannel.open();
             serverSocket.bind(new InetSocketAddress(port));
             serverSocket.configureBlocking(false);
             serverSocket.register(selector, SelectionKey.OP_READ);
-            System.out.println("server ready");
+            System.out.println("Receiver ready");
             while(true) {
-                if(this.state.equals("new")) {
+                if(this.state.equals(Constants.STATE_NEW)) {
                     msgSender.sendJoin();
                     this.setJoining();
                     // TODO: FOR LOGGER DEBUG
@@ -47,6 +50,7 @@ public class MsgReceiver implements Runnable {
                     selector.select();
                 } catch(IOException e) {
                     System.out.println("Selector error");
+                    //non dovrebbe succedere
                     break;
                 }
                 Set<SelectionKey> readyKeys = selector.selectedKeys();
@@ -63,6 +67,7 @@ public class MsgReceiver implements Runnable {
                             ObjectInputStream ois = new ObjectInputStream(bais);
                             ReliableMsg msg = (ReliableMsg) ois.readObject();
                             clock.updateScalarclock(msg.getScalarclock());
+                            System.out.println(msg.getType());
                             switch(msg.getType()){
                                 case(Constants.MSG_JOIN):
                                     handleJoin(msg);
@@ -86,39 +91,39 @@ public class MsgReceiver implements Runnable {
                             }
                         } catch(IOException | ClassNotFoundException ignored) {
                             System.out.println("switch error");
+                            //non dovrebbe succedere
+                            break;
                         }
                     }
                 }
             }
         } catch(IOException ignored) {
             System.out.println("selector error");
+            //non dovrebbe succedere
         }
     }
 
     public void handleJoin(ReliableMsg msg) throws IOException {
         switch(this.state) {
-            case("new"):
+            case(Constants.STATE_NEW):
                 //ignored
                 msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_NEW);
                 break;
-            case("joining"):
+            case(Constants.STATE_JOINING):
                 //ignored
                 msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINING);
                 break;
-            case("joined"):
+            case(Constants.STATE_JOINED):
+                msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINED);
                 this.setChange();
                 this.msgSender.setLastJoin(msg.getFrom(), msg.getTimestamp());
-                this.endMap = new HashMap<>();
-                for(String a : msgSender.getMember()) {
-                    this.endMap.put(a, false);
-                }
-                this.endMap.put(msg.getFrom(), false);
+                this.endMap.put(msg.getFrom(), false);// questo e il nuovo membro va aggiunto pure
+                this.generateendMap();
                 if(messageBuffer.isMessageQueueEmpty()) {
-                    this.msgSender.sendEnd();//need add acheker for arraylist
+                    this.msgSender.sendEnd();
                 }
-                msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINED);
                 break;
-            case("change"):
+            case(Constants.STATE_CHANGE):
                 //ignored
                 //gia ho fatto una decisione se ho fatto join, non ti posso piu accettare, se ho fatto remove, remova ha la precedenza su join
                 msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_CHANGE);
@@ -130,36 +135,34 @@ public class MsgReceiver implements Runnable {
         String s = msg.getBody();
         String[] t = s.split(";");
         HashSet<String> tmp = new HashSet<>(Arrays.asList(t));
-        boolean done = true;
+        //set dei membri ricevuti
         switch(this.state) {
-            case("new"):
+            case(Constants.STATE_NEW):
                 //ignored
                 msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_NEW);
                 break;
-            case("joining"):
+            case(Constants.STATE_JOINING):
                 msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINING);
-                if(tmp.contains(this.ip)) {
+                if(tmp.contains(ip)) {
                     // e un end per me
                     if(this.endMap == null) {// il primo end che ricevo
+                        tmp.remove(this.ip);//devo rimuovermi dato che il mio ip e su lastjoinip
                         this.msgSender.setMemberMap(tmp);
-                        this.msgSender.sendEnd();
+                        this.generateendMap();
+                        if(messageBuffer.isMessageQueueEmpty()) {
+                            this.msgSender.sendEnd();//dovrebbe essere vuoto dato che appena creato
+                        }
                         this.endMap.replace(msg.getFrom(), false, true);
                     }
                     else {
                         if(tmp.equals(this.endMap.keySet())) {
                             this.endMap.replace(msg.getFrom(), false, true);
-                            for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
-                                if (!entry.getValue()) {
-                                    done = false;
-                                    break;
-                                }
-                            }
-                            if(done) {
+                            if(this.checkendMap()) {
                                 this.setJoined(msg.getView());
                             }
                         }
                         if(tmp.size() < this.endMap.size()) {
-                            //succede un remove e non posso entrare
+                            //succede un remove e non posso entrare riprovare dopo 1s
                             this.setNew();
                             try {
                                 Thread.sleep(1000);
@@ -170,94 +173,74 @@ public class MsgReceiver implements Runnable {
                     }
                 }
                 break;
-            case ("joined"):
+            case (Constants.STATE_JOINED):
                 msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINED);
                 this.setChange();
                 if(tmp.size() > this.msgSender.getMember().size()) {
                     //this a join
                     tmp.removeAll(this.msgSender.getMember());
                     ArrayList<String> arrayTmp = new ArrayList<>(tmp);
-                    this.msgSender.setLastJoin(arrayTmp.get(0), msg.getTimestamp());
-                    this.endMap = new HashMap<>();
-                    for (String a : tmp) {
-                        this.endMap.put(a, false);
-                    }
+                    this.msgSender.setLastJoin(arrayTmp.get(0), msg.getTimestamp());//cosi trovo quale e il nuovo ip che ha fatto join
+                    this.generateendMap();
                     this.endMap.put(msgSender.getLastJoinIp(), false);
                     this.endMap.replace(msg.getFrom(), false, true);
                     if(messageBuffer.isMessageQueueEmpty()) {
                         this.msgSender.sendEnd();
                     }
-                    break;
                 }
                 else {
                     //this a remove
-                    String b = "";
                     for(String a : this.msgSender.getMember()) {
                         if(!tmp.contains(a)) {
-                            b = a;
-                            this.msgSender.setLastRemoveIp(b);
-                            break;
+                            this.msgSender.setLastRemoveIp(a);
+                            break;//trovo il ip da rimuovere termina la scansione
                         }
                     }
-                    this.endMap = new HashMap<>();
-                    for (String a : tmp) {
-                        this.endMap.put(a, false);
-                    }
+                    this.generateendMap();
                     this.endMap.replace(msg.getFrom(), false, true);
                 }
                 if(messageBuffer.isMessageQueueEmpty()) {
                     this.msgSender.sendEnd();//need add acheker for arraylist
                 }
                 break;
-            case ("change"):
+            case(Constants.STATE_CHANGE):
                 msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_CHANGE);
-                if (tmp.size() == this.endMap.size()) {
+                if(tmp.size() == this.endMap.size()) {
                     if (tmp.equals(this.endMap.keySet())) {
                         this.endMap.replace(msg.getFrom(), false, true);
                     } else {
-                        if (msg.getTimestamp() < msgSender.getLastJoinTimestamp()) {
+                        if (msg.getTimestamp() < msgSender.getLastJoinTimestamp()) {//abbiamo lo stesso size, dato che solo un processo fallisce, sicuramente \`e un join
                             //ho ricevuto un join piu presto percio devo cambiare la mia scelta
-                            this.msgSender.setLastJoin(msg.getFrom(), msg.getTimestamp());
-                            this.endMap = new HashMap<>();
-                            for (String a : tmp) {
-                                this.endMap.put(a, false);
-                            }
+                            this.endMap.keySet().removeAll(tmp);
+                            ArrayList<String> arrayTmp = new ArrayList<>(this.endMap.keySet());
+                            this.msgSender.setLastJoin(arrayTmp.get(0), msg.getTimestamp());//trovato il nuovo join
+                            this.endMap.put(msgSender.getLastJoinIp(), false);
+                            this.generateendMap();
                             this.endMap.replace(msg.getFrom(), false, true);
-                            if(messageBuffer.isMessageQueueEmpty()) {
+                            if (messageBuffer.isMessageQueueEmpty()) {
                                 this.msgSender.sendEnd();//need add acheker for arraylist
                             }
                         }
                     }
                 }
-                if(tmp.size() > this.endMap.size()) {
-                    //ho fatto un remove e ho ricevuto un join
-                    //ignorato semplicemente
-                }
-                else {
-                    //ho fatto un join e ho ricevuto un remove
-                    //remove ha precedenza su join
-                    this.endMap.keySet().removeAll(tmp); //back-end and vice versa so we just modify on hashset to change hashmap
-                    this.endMap.keySet().remove(this.msgSender.getLastJoinIp());
-                    ArrayList<String> arrayTmp = new ArrayList<>(this.endMap.keySet());
-                    this.msgSender.setLastRemoveIp(arrayTmp.get(0));
-                    this.endMap = new HashMap<>();
-                    for (String a : tmp) {
-                        this.endMap.put(a, false);
+                else{
+                    if (tmp.size() < this.endMap.size()) {
+                        //ho fatto un join e ho ricevuto un remove
+                        //remove ha precedenza su join
+                        this.endMap.keySet().removeAll(tmp); //back-end and vice versa so we just modify on hashset to change hashmap
+                        this.endMap.keySet().remove(this.msgSender.getLastJoinIp());
+                        this.msgSender.clearLast();
+                        ArrayList<String> arrayTmp = new ArrayList<>(this.endMap.keySet());
+                        this.msgSender.setLastRemoveIp(arrayTmp.get(0));
+                        this.generateendMap();
+                        this.endMap.replace(msg.getFrom(), false, true);
+                        if (messageBuffer.isMessageQueueEmpty()) {
+                            this.msgSender.sendEnd();
+                        }
                     }
-                    this.endMap.put(msgSender.getLastJoinIp(), false);
-                    this.endMap.replace(msg.getFrom(), false, true);
-                    if(messageBuffer.isMessageQueueEmpty()) {
-                        this.msgSender.sendEnd();//need add acheker for arraylist
+                    if(this.checkendMap()) {
+                        this.setJoined(msg.getView());
                     }
-                }
-                for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
-                    if (!entry.getValue()) {
-                        done = false;
-                        break;
-                    }
-                }
-                if(done) {
-                    this.setJoined(msg.getView());
                 }
                 break;
         }
@@ -266,48 +249,48 @@ public class MsgReceiver implements Runnable {
     public void handleACK(ReliableMsg msg) throws IOException {
         if (msgSender.isMember(msg.getFrom())) {
             switch (this.state) {
-                case ("new"):
+                case (Constants.STATE_NEW):
                     //not gonna happen
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_NEW);
                     break;
-                case ("joining"):
+                case (Constants.STATE_JOINING):
                     //not gonna happen
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINING);
                     break;
-                case ("joined"):
+                case (Constants.STATE_JOINED):
                     //
                     messageBuffer.receiveACK(msg);
                     messageBuffer.delivery();
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINED);
                     break;
-                case ("change"):
+                case (Constants.STATE_CHANGE):
                     messageBuffer.receiveACK(msg);
                     messageBuffer.delivery();
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_CHANGE);
                     break;
             }
         }
-    }// wait rentao
+    }
 
     public void handleMsg(ReliableMsg msg) throws IOException {
         if (msgSender.isMember(msg.getFrom()) && msg.getView() == this.msgSender.getView()) {
             switch (this.state) {
-                case ("new"):
+                case (Constants.STATE_NEW):
                     //ignored
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_NEW);
                     break;
-                case ("joining"):
+                case (Constants.STATE_JOINING):
                     //ignored
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINING);
                     break;
-                case ("joined"):
+                case (Constants.STATE_JOINED):
                     //add here
                     msgSender.sendACK(messageBuffer.getMessageId(msg));
                     messageBuffer.newMessage(msg);
                     messageBuffer.newMessageACK(msg);
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINED);
                     break;
-                case ("change"):
+                case (Constants.STATE_CHANGE):
                     //add here
                     msgSender.sendACK(messageBuffer.getMessageId(msg));
                     messageBuffer.newMessage(msg);
@@ -315,31 +298,31 @@ public class MsgReceiver implements Runnable {
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_CHANGE);
                     break;
             }
-        }//wait rentao
+        }
     }
 
     public void handleAlive(ReliableMsg msg) throws IOException {
         if (msgSender.isMember(msg.getFrom())) {
             switch (this.state) {
-                case ("new"):
+                case (Constants.STATE_NEW):
                     //ignored
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_NEW);
                     break;
-                case ("joining"):
+                case (Constants.STATE_JOINING):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINING);
                     if(this.endMap == null) {
                         retry++;
                     }
                     if(retry > 2) {
-                        this.setJoined(msg.getView());; // i am alone so i am the member now
+                        this.setJoined(msg.getView()); // i am alone so i am the member now
                     }
                     this.msgSender.update(msg.getFrom(), msg.getTimestamp());
                     break;
-                case ("joined"):
+                case (Constants.STATE_JOINED):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINED);
                     this.msgSender.update(msg.getFrom(), msg.getTimestamp());
                     break;
-                case ("change"):
+                case (Constants.STATE_CHANGE):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_CHANGE);
                     this.msgSender.update(msg.getFrom(), msg.getTimestamp());
                     break;
@@ -350,50 +333,36 @@ public class MsgReceiver implements Runnable {
     public void handleDrop(ReliableMsg msg) throws IOException {
         if (msgSender.isMember(msg.getFrom())) {
             switch (this.state) {
-                case ("new"):
+                case (Constants.STATE_NEW):
                     //ignored
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_NEW);
                     break;
-                case ("joining"):
+                case (Constants.STATE_JOINING):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINING);
                     if(this.endMap != null) {
-                        this.msgSender.setLastRemoveIpShadow(msg.getBody());
+                        this.msgSender.setLastRemoveIpShadow(msg.getBody()); //purtroppo gia ho fatto un join
                         this.endMap.keySet().remove(msg.getBody());
-                        boolean done = true;
-                        for (Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
-                            if (!entry.getValue()) {
-                                done = false;
-                                break;
-                            }
-                        }
-                        if(done) {
+                        if(this.checkendMap()) {
                             this.setJoined(msg.getView());
                         }
                     }
+                    else {
+                        this.msgSender.setLastRemoveIpShadow(msg.getBody());
+                    }
                     break;
-                case ("joined"):
+                case (Constants.STATE_JOINED):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINED);
                     this.setChange();
                     this.msgSender.setLastRemoveIp(msg.getBody());
-                    this.endMap = new HashMap<>();
-                    for(String a : msgSender.getMember()) {
-                        this.endMap.put(a, false);
-                    }
-                    this.endMap.remove(msg.getBody(), false);
+                    this.generateendMap();
+                    this.endMap.remove(msg.getBody(), false);//rimuove il che non serve
                     this.msgSender.sendEnd();
                     break;
-                case ("change"):
+                case (Constants.STATE_CHANGE):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_CHANGE);
                     this.msgSender.setLastRemoveIpShadow(msg.getBody());
                     this.endMap.keySet().remove(msg.getBody());
-                    boolean done = true;
-                    for (Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
-                        if (!entry.getValue()) {
-                            done = false;
-                            break;
-                        }
-                    }
-                    if(done) {
+                    if(this.checkendMap()) {
                         this.setJoined(msg.getView());
                     }
                     break;
@@ -402,29 +371,51 @@ public class MsgReceiver implements Runnable {
     }
 
     public void setNew() {
-        this.state = "new";
+        this.state = Constants.STATE_NEW;
         this.endMap = null;
         this.msgSender.setFalse();
         this.retry = 0;
     }
 
     public void setJoining() {
-        this.state = "joining";
+        this.state = Constants.STATE_JOINING;
         this.msgSender.setFalse();
         this.retry = 0;
         this.endMap = null;
     }
 
     public void setChange() {
-        this.state = "change";
+        this.state = Constants.STATE_CHANGE;
         this.msgSender.setFalse();
     }
 
     public void setJoined(int view) {
-        this.state = "joined";
+        this.state = Constants.STATE_JOINED;
         this.endMap = null;
         this.msgSender.setTrue();
         this.msgSender.updateView(view);
+    }
+
+    public void generateendMap() {
+        this.endMap = new HashMap<>();
+        for(String a : msgSender.getMember()) {
+            this.endMap.put(a, false);
+        }
+        if(debug) {
+            for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
+                System.out.println(entry.getKey() + "=" + entry.getValue());
+            }
+        }
+    }
+
+    public boolean checkendMap() {
+        for (Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
+            System.out.println(entry.getKey() + "=" + entry.getValue());
+            if (!entry.getValue()) {
+                return false;
+            }
+        }
+        return true;
     }
 
 }

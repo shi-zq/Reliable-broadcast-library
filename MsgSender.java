@@ -23,7 +23,7 @@ public class MsgSender {
     private String lastRemoveIp;
     private boolean awareness;
     private int messageSequenceNumber;  // Used for FIFO
-    LogicalClock clock;
+    private LogicalClock clock;
     //Sender and Receiver share a single logical clock.
 
     public MsgSender(String ip, int port, InetAddress broadcast, LogicalClock clock) throws SocketException {
@@ -108,7 +108,6 @@ public class MsgSender {
      * */
     public synchronized void sendMsgToSocket(ReliableMsg msg) throws IOException {
         try {
-            System.out.println("sned someing");
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
             oos.writeObject(msg);
@@ -203,6 +202,12 @@ public class MsgSender {
         this.lastJoinIpAlive = 0L;
     }
 
+    public synchronized void clearLast() {
+        this.lastJoinIp = null;
+        this.lastJoinTimestamp = 0L;
+        this.lastJoinIpAlive = 0L;
+    }
+
     public synchronized void setLastJoin(String ip, Long time) {
         this.lastJoinIp = ip;
         this.lastJoinTimestamp = time;
@@ -223,6 +228,8 @@ public class MsgSender {
     }
 
     public synchronized void setMemberMap(HashSet<String> member) {
+        //usato solo da joinning, percio il mio ip dovrebbe essere lastjoin
+        member.remove(this.ip);
         for(String tmp : member) {
             this.memberMap.put(tmp, System.currentTimeMillis());
         }

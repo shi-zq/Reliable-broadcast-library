@@ -1,24 +1,27 @@
 public class AliveSender implements  Runnable{
-    private MsgSender msgSender;
+    private final MsgSender msgSender;
+    private final boolean debug;
+    private final Running running;
 
-    public AliveSender(MsgSender msgSender) {
+    public AliveSender(MsgSender msgSender, boolean debug, Running running) {
         this.msgSender = msgSender;
+        this.debug = debug;
+        this.running = running;
     }
     public void run() {
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        System.out.println("AliveSender ready");
-        while(true) {
+        System.out.println("Alive sender ready");
+        while(running.isRunning()) {
             msgSender.sendAlive();
             msgSender.checkTimestamp();
             try {
                 Thread.sleep(5000);
+                if(debug){
+                    System.out.println("Alive sender sleep 5s");
+                }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
+        System.out.println("Alive sender terminated");
     }
 }

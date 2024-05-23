@@ -13,8 +13,7 @@ public class MsgLogger {
 
     public MsgLogger() {}
 
-    public void printLog(ReliableMsg reliableMsg, String type, IOException exp, String state) throws IOException {
-
+    public synchronized void printLog(ReliableMsg reliableMsg, String type, IOException exp, String state) throws IOException {
         if (type.equals(Constants.MSG_SUCC)){
             if(reliableMsg != null){
                 this.state = state;
