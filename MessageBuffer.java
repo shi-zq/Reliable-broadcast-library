@@ -50,10 +50,10 @@ public class MessageBuffer {
 //        }
 //    }
 
-    public synchronized void delivery() {
-        while (!messageQueue.isEmpty() && ackManager.getAckCount(messageQueue.peek()) >= roommates) {
+    public synchronized void delivery(Set<String> members) {
+        while (!messageQueue.isEmpty() && ackManager.isFullyAcknowledged(messageQueue.peek(), members)) {
             ReliableMsg msg = messageQueue.poll();
-            System.out.println("Delivering message: " + msg.getBody() + "from" + msg.getFrom());
+            System.out.println("Delivering message: " + msg.getBody());
             // 这里可以添加更多的消息处理逻辑
         }
     }

@@ -11,8 +11,8 @@ public class AliveSender implements  Runnable{
     public void run() {
         System.out.println("Alive sender ready");
         while(running.isRunning()) {
-            msgSender.sendAlive();
-            msgSender.checkTimestamp();
+            this.msgSender.sendAlive();
+            this.msgSender.checkTimestamp();
             try {
                 Thread.sleep(5000);
                 if(debug){

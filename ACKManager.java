@@ -39,4 +39,12 @@ public class ACKManager {
     private synchronized String getMessageId(ReliableMsg message) {
     	return message.getFrom() + ":" + String.valueOf(message.getTimestamp());
     }
+
+    // Judging that weather a message is acknowledged by all.
+    public synchronized boolean isFullyAcknowledged(ReliableMsg message, Set<String> members) {
+        String messageId = getMessageId(message);
+        Set<String> receivedAcks = acks.getOrDefault(messageId, new HashSet<>());
+
+        return receivedAcks.containsAll(members);
+    }
 }

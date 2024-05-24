@@ -18,7 +18,7 @@ public class ReliableBroadcast {
         this.clock = new LogicalClock(InetAddress.getLocalHost().getHostAddress());
         this.msgSender = new MsgSender(InetAddress.getLocalHost().getHostAddress(), 5000, InetAddress.getByName("255.255.255.255"), clock);
         this.aliveSender = new AliveSender(msgSender, true, running);
-        this.msgReceiver = new MsgReceiver(msgSender, InetAddress.getLocalHost().getHostAddress(), 5000, messageBuffer, clock);
+        this.msgReceiver = new MsgReceiver(msgSender, InetAddress.getLocalHost().getHostAddress(), 5000, messageBuffer, clock, true, running);
         Thread senderThread = new Thread(aliveSender);
         Thread receiverThread = new Thread(msgReceiver);
         senderThread.start();
