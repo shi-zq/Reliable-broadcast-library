@@ -152,6 +152,7 @@ public class MsgReceiver implements Runnable {
                     if(this.endMap == null){// il primo end che ricevo
                         tmp.remove(this.ip);//devo rimuovermi dato che il mio ip e su lastjoinip
                         this.msgSender.setMemberMap(tmp);
+                        this.msgSender.setView(msg.getView());
                         this.generateendMap();
                         this.endMap.replace(msg.getFrom(), true);
                         if(messageBuffer.isMessageQueueEmpty()){
@@ -220,10 +221,10 @@ public class MsgReceiver implements Runnable {
             case(Constants.STATE_CHANGE):
                 msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_CHANGE);
                 if(tmp.size() == this.endMap.size()) {
-                    if (tmp.equals(this.endMap.keySet())) {
+                    if(tmp.equals(this.endMap.keySet())) {
                         this.endMap.replace(msg.getFrom(), false, true);
                     }
-                    else {
+                    else{
                         if (msg.getTimestamp() < msgSender.getLastJoinTimestamp()) {//abbiamo lo stesso size, dato che solo un processo fallisce, sicuramente \`e un join
                             //ho ricevuto un join piu presto percio devo cambiare la mia scelta
                             this.endMap.keySet().removeAll(tmp);

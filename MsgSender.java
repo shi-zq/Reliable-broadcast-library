@@ -235,6 +235,9 @@ public class MsgSender {
         }
     }
 
+    public synchronized void setView(int view) {
+        this.view = view;
+    }
     public synchronized void updateView(int view) {
         this.view = view+1;
     }
