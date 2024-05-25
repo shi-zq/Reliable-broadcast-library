@@ -111,6 +111,7 @@ public class MsgReceiver implements Runnable {
         switch(this.state) {
             case(Constants.STATE_NEW):
                 msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_NEW);
+                //3 volte join per diventare master del lobby
                 //messaggi ignorato semplicemente
                 break;
             case(Constants.STATE_JOINING):
