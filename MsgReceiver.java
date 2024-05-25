@@ -167,6 +167,7 @@ public class MsgReceiver implements Runnable {
                         this.msgSender.setMemberMap(tmp);
                         this.msgSender.setView(msg.getView());
                         this.generateendMap();
+                        this.endMap.put(this.msgSender.getLastJoinIp(), true);
                         this.endMap.replace(msg.getFrom(), true);
                         if(debug) {
                             for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
