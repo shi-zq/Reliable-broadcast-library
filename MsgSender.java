@@ -124,13 +124,13 @@ public class MsgSender {
     public synchronized void checkTimestamp() {
         Long now = System.currentTimeMillis();
         for(Map.Entry<String, Long> entry : memberMap.entrySet()) {
-            if(now - entry.getValue() > 5000*3) {
-                if(!entry.getKey().equals(this.lastRemoveIp)){
+            if((now - entry.getValue()) > 5000*3) {
+                if(this.lastRemoveIp!= null && !entry.getKey().equals(this.lastRemoveIp)){
                     this.sendDrop(entry.getKey());
                 }
             }
         }
-        if(now - lastJoinIpAlive > 5000*3) {
+        if((now - lastJoinIpAlive) > 5000*3) {
             if(this.lastJoinIp != null && this.lastJoinIp.equals(this.lastRemoveIp)){
                 this.sendDrop(lastJoinIp);
             }
