@@ -6,7 +6,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.*;
 
-public class MsgReceiver implements Runnable {
+public class MsgReceiver implements Runnable{
     private final MsgSender msgSender;
     private final String ip;
     private final int port;

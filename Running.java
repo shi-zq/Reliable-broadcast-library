@@ -1,15 +1,15 @@
-public class Running {
+public class Running{
     private boolean running;
 
-    public Running() {
+    public Running(){
         this.running = true;
     }
 
-    public synchronized boolean isRunning() {
+    public synchronized boolean isRunning(){
         return running;
     }
 
-    public synchronized void setRunning() {
+    public synchronized void setRunning(){
         this.running = false;
     }
 }

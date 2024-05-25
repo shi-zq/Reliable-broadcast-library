@@ -11,13 +11,13 @@ public class AliveSender implements  Runnable{
 
     public void run(){
         System.out.println("Alive sender ready");
-        while(running.isRunning()) {
+        while(running.isRunning()){
             this.msgSender.sendAlive();
             this.msgSender.checkTimestamp();
             try {
                 Thread.sleep(3000);
             }
-            catch (InterruptedException e){
+            catch(InterruptedException e){
                 throw new RuntimeException(e);
             }
         }

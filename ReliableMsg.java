@@ -1,6 +1,6 @@
 import java.io.Serializable;
 
-public class ReliableMsg implements Serializable {
+public class ReliableMsg implements Serializable{
     private String type;
     private String from;
     private Long timestamp;
@@ -9,7 +9,7 @@ public class ReliableMsg implements Serializable {
     private int sequenceNumber;
     private int scalarclock;
 
-    public ReliableMsg(String type, String from, Long timestamp, int view, String body, int scalarclock, int sequenceNumber) {
+    public ReliableMsg(String type, String from, Long timestamp, int view, String body, int scalarclock, int sequenceNumber){
         this.type = type;
         this.from = from;
         this.timestamp = timestamp;
@@ -19,31 +19,31 @@ public class ReliableMsg implements Serializable {
         this.sequenceNumber = sequenceNumber;
     }
 
-    public String getType() {
+    public String getType(){
         return type;
     }
 
-    public String getFrom() {
+    public String getFrom(){
         return from;
     }
 
-    public Long getTimestamp() {
+    public Long getTimestamp(){
         return timestamp;
     }
 
-    public int getView() {
+    public int getView(){
         return view;
     }
 
-    public String getBody() {
+    public String getBody(){
         return body;
     }
     
-    public int getScalarclock() {
+    public int getScalarclock(){
         return scalarclock;
     }
     
-    public int getSequenceNumber() {
+    public int getSequenceNumber(){
         return sequenceNumber;
     }
 }

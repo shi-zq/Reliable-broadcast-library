@@ -14,7 +14,7 @@ public class ReliableBroadcast {
     private Thread senderThread;
     private Thread receiverThread;
 
-    public ReliableBroadcast() throws IOException {
+    public ReliableBroadcast() throws IOException{
         this.running = new Running();
         this.messageBuffer = new MessageBuffer();
         this.clock = new LogicalClock(InetAddress.getLocalHost().getHostAddress());
@@ -33,22 +33,22 @@ public class ReliableBroadcast {
         this.senderThread.start();
         this.receiverThread.start();
     }
-    public void terminate() {
+    public void terminate(){
         running.setRunning();
     }
 
-    public void send(ReliableMsg msg) throws IOException {
+    public void send(ReliableMsg msg) throws IOException{
         this.msgSender.sendMsgToSocket(msg);
     }
 
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws IOException, InterruptedException{
         ReliableBroadcast t = new ReliableBroadcast();
 
         Scanner scanIn =new Scanner(System.in);
         String input = scanIn.nextLine();
         ReliableBroadcast r = new ReliableBroadcast();
-        switch(input) {
+        switch(input){
             case("1"):
                 r.run();
                 Thread.sleep(10000);
