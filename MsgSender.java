@@ -65,6 +65,15 @@ public class MsgSender {
         }
     }
 
+    public synchronized void sendEnd(String ip) {
+        ReliableMsg end = new ReliableMsg(Constants.MSG_END, ip, System.currentTimeMillis(), view, ip, -1, -1);
+        try {
+            sendMsgToSocket(end);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public synchronized void sendEnd() {
         ReliableMsg end = new ReliableMsg(Constants.MSG_END, ip, System.currentTimeMillis(), view, createMemberList(), -1, -1);
         try {

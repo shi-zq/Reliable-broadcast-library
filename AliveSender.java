@@ -3,19 +3,21 @@ public class AliveSender implements  Runnable{
     private final boolean debug;
     private final Running running;
 
-    public AliveSender(MsgSender msgSender, boolean debug, Running running) {
+    public AliveSender(MsgSender msgSender, boolean debug, Running running){
         this.msgSender = msgSender;
         this.debug = debug;
         this.running = running;
     }
-    public void run() {
+
+    public void run(){
         System.out.println("Alive sender ready");
         while(running.isRunning()) {
             this.msgSender.sendAlive();
             this.msgSender.checkTimestamp();
             try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
+                Thread.sleep(3000);
+            }
+            catch (InterruptedException e){
                 throw new RuntimeException(e);
             }
         }
