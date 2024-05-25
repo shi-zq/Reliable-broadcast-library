@@ -67,7 +67,7 @@ public class MsgReceiver implements Runnable {
                             ByteArrayInputStream bais = new ByteArrayInputStream(readData.array());
                             ObjectInputStream ois = new ObjectInputStream(bais);
                             ReliableMsg msg = (ReliableMsg) ois.readObject();
-                            clock.updateScalarclock(msg.getScalarclock());
+
                             //我还是不能理解???
                             switch(msg.getType()){
                                 case(Constants.MSG_JOIN):
@@ -328,6 +328,7 @@ public class MsgReceiver implements Runnable {
 
     public void handleMsg(ReliableMsg msg) throws IOException {
         if (msgSender.isMember(msg.getFrom()) && msg.getView() == this.msgSender.getView()) {
+
             switch (this.state) {
                 case (Constants.STATE_NEW):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_NEW);
@@ -336,12 +337,14 @@ public class MsgReceiver implements Runnable {
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINING);
                     break;
                 case (Constants.STATE_JOINED):
+                    clock.updateScalarclock(msg.getScalarclock());
                     msgSender.sendACK(messageBuffer.getMessageId(msg));
                     messageBuffer.newMessage(msg);
                     messageBuffer.newMessageACK(msg);
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINED);
                     break;
                 case (Constants.STATE_CHANGE):
+                    clock.updateScalarclock(msg.getScalarclock());
                     msgSender.sendACK(messageBuffer.getMessageId(msg));
                     messageBuffer.newMessage(msg);
                     messageBuffer.newMessageACK(msg);
@@ -436,6 +439,7 @@ public class MsgReceiver implements Runnable {
         this.state = Constants.STATE_JOINED;
         this.msgSender.setTrue();
         this.msgSender.updateView(view);
+        this.messageBuffer.updateFIFOQueue(this.msgSender.getMember());
     }
 
     public void generateendMap() {

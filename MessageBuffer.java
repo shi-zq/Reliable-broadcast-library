@@ -11,7 +11,6 @@ public class MessageBuffer {
     private ACKManager ackManager;  // 加入ACK管理器
 
     public MessageBuffer() {
-        this.roommates = 0;
         this.FIFOQueue = new HashMap<>();  // New HashMap to buffer msg from different id
         this.expectedSequenceNumber = new HashMap<>(); //初始化用于存放FIFO递增序列号的表
         this.messageQueue = new PriorityQueue<>(Comparator  // 初始化 PriorityQueue，按照 scalar clock 和 process ID 排序
@@ -58,10 +57,11 @@ public class MessageBuffer {
         }
     }
     // 更新FIFOQueue
-    public synchronized void updateFIFOQueue(String processId, String sequ) {
-        FIFOQueue.put(processId, new LinkedList<>());
-        expectedSequenceNumber.put(processId, 0);
-        // System.out.println(processId+ sequ);
+    public synchronized void updateFIFOQueue(Set<String> members) {
+        for(String ip : members) {
+            FIFOQueue.put(ip, new LinkedList<>());
+            expectedSequenceNumber.put(ip, 0);
+        }
     }
     
     public synchronized void addRoommate() {

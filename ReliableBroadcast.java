@@ -37,6 +37,10 @@ public class ReliableBroadcast {
         running.setRunning();
     }
 
+    public void send(ReliableMsg msg) throws IOException {
+        this.msgSender.sendMsgToSocket(msg);
+    }
+
 
     public static void main(String[] args) throws IOException, InterruptedException {
         ReliableBroadcast t = new ReliableBroadcast();
@@ -63,6 +67,15 @@ public class ReliableBroadcast {
                 Thread.sleep((5000));
                 r.terminate();
                 //combinare 1 e 3 per testare se qualcuno fa il leave
+            case ("4"):
+                r.run();
+                ReliableMsg msg1 = new ReliableMsg(Constants.MSG, InetAddress.getLocalHost().getHostAddress(), System.currentTimeMillis(), 2,"Sencond Message", 2,1 );
+                Thread.sleep((20000));
+                r.send(msg1);
+                ReliableMsg msg2 = new ReliableMsg(Constants.MSG, InetAddress.getLocalHost().getHostAddress(), System.currentTimeMillis(), 2,"First Message", 1,0 );
+                r.send(msg2);
+
+
 
         }
 

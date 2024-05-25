@@ -79,6 +79,9 @@ public class MsgSender {
             ReliableMsg message = new ReliableMsg(Constants.MSG, ip, System.currentTimeMillis(), view, content, clock.getScalarclock(), this.messageSequenceNumber);
             try {
                 sendMsgToSocket(message);
+                messageSequenceNumber = messageSequenceNumber + 1;
+                clock.updateScalarclock(message.getScalarclock());
+                System.out.println("Sending " + content + " to " + ip);
             } catch (IOException e) {
                 e.printStackTrace();
             }
