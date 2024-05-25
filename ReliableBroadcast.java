@@ -29,7 +29,7 @@ public class ReliableBroadcast {
         return this.msgSender.sendMsg(msg);
     }
 
-    punlic void run() {
+    public void run() {
         this.senderThread.start();
         this.receiverThread.start();
     }
@@ -48,7 +48,7 @@ public class ReliableBroadcast {
             case("1"):
                 r.run();
                 Thread.sleep(10000);
-                r.terminate();
+                //r.terminate();
                 //vedere se riesco fare il join
                 break;
             case("2"):

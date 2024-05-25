@@ -146,7 +146,7 @@ public class MsgSender {
     }
 
     public synchronized boolean isMember(String ip) {
-        return this.memberMap.containsKey(ip);
+        return this.memberMap.containsKey(ip) || this.lastJoinIp.equals(ip);
     }
 
     public synchronized String createMemberList() {

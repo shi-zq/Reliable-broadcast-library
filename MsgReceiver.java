@@ -319,6 +319,7 @@ public class MsgReceiver implements Runnable {
                     break;
                 case (Constants.STATE_JOINING):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINING);
+                    this.msgSender.sendJoin();
                     if(this.endMap == null) {
                         retry++;
                     }
