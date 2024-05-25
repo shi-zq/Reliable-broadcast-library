@@ -172,7 +172,7 @@ public class MsgSender {
     }
 
     public synchronized Set<String> getMember() {
-        return (Set<String>) this.memberMap.keySet();
+        return this.memberMap.keySet();
     }
 
     public synchronized Long getLastJoinTimestamp() {
@@ -207,12 +207,6 @@ public class MsgSender {
 
     public synchronized void setFalse() {
         this.sending = false;
-    }
-
-    public synchronized void clearLast() {
-        this.lastJoinIp = null;
-        this.lastJoinTimestamp = 0L;
-        this.lastJoinIpAlive = 0L;
     }
 
     public synchronized void setLastJoin(String ip, Long time) {
