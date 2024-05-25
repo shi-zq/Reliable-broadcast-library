@@ -69,7 +69,6 @@ public class MsgReceiver implements Runnable {
                             ReliableMsg msg = (ReliableMsg) ois.readObject();
                             clock.updateScalarclock(msg.getScalarclock());
                             //我还是不能理解???
-                            System.out.println(msg.getType());
                             switch(msg.getType()){
                                 case(Constants.MSG_JOIN):
                                     handleJoin(msg);
@@ -319,12 +318,12 @@ public class MsgReceiver implements Runnable {
                     break;
                 case (Constants.STATE_JOINING):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINING);
-                    this.msgSender.sendJoin();
                     if(this.endMap == null) {
                         retry++;
                     }
                     if(retry > 2) {
                         this.setJoined(msg.getView()); // i am alone so i am the member now
+                        System.out.println("iam in");
                     }
                     this.msgSender.update(msg.getFrom(), msg.getTimestamp());
                     break;
@@ -389,8 +388,6 @@ public class MsgReceiver implements Runnable {
 
     public void setJoining() {
         this.state = Constants.STATE_JOINING;
-        this.msgSender.setFalse();
-        this.retry = 0;
     }
 
     public void setChange() {

@@ -5,3 +5,48 @@
 [2024-05-25 13:46:46 joining] :msg type : JOIN , from : 192.168.251.183 , view : 0 , body : 
 [2024-05-25 13:46:53 joining] :msg type : JOIN , from : 192.168.251.107 , view : 0 , body : 
 [2024-05-25 13:49:57 joining] :msg type : JOIN , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 13:54:12 joining] :msg type : JOIN , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 13:54:17 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 13:54:17 joining] :msg type : JOIN , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 13:54:22 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 13:54:22 joining] :msg type : JOIN , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 13:54:27 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 13:54:27 joined] :msg type : JOIN , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:08:45 joining] :msg type : JOIN , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:08:50 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:08:50 joining] :msg type : JOIN , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:08:55 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:08:55 joining] :msg type : JOIN , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:09:00 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:09:00 joined] :msg type : JOIN , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:15:00 joining] :msg type : JOIN , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:15:05 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:15:05 joining] :msg type : JOIN , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:15:10 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:15:10 joining] :msg type : JOIN , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:15:15 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:15:15 joined] :msg type : JOIN , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:16:46 joining] :msg type : JOIN , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:16:51 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:16:56 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:17:01 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:17:06 joined] :msg type : ALIVE , from : 192.168.251.183 , view : 1 , body : 
+[2024-05-25 14:17:06 joined] :msg type : DROP , from : 192.168.251.183 , view : 1 , body : 192.168.251.183
+[2024-05-25 14:19:58 joining] :msg type : JOIN , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:20:03 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:20:08 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:20:24 joining] :msg type : JOIN , from : 192.168.251.150 , view : 0 , body : 
+[2024-05-25 14:20:13 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:21:05 joining] :msg type : JOIN , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:21:10 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:21:15 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:21:20 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:21:25 joined] :msg type : ALIVE , from : 192.168.251.183 , view : 1 , body : 
+[2024-05-25 14:21:25 joined] :msg type : DROP , from : 192.168.251.183 , view : 1 , body : 192.168.251.183
+[2024-05-25 14:22:05 joining] :msg type : JOIN , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:22:10 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:22:15 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:22:20 joining] :msg type : ALIVE , from : 192.168.251.183 , view : 0 , body : 
+[2024-05-25 14:22:25 joined] :msg type : ALIVE , from : 192.168.251.183 , view : 1 , body : 
+[2024-05-25 14:22:25 joined] :msg type : DROP , from : 192.168.251.183 , view : 1 , body : 192.168.251.183
+[2024-05-25 14:22:25 change] :msg type : END , from : 192.168.251.183 , view : 1 , body : ;192.168.251.183

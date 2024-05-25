@@ -8,6 +8,7 @@ import java.net.SocketException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class MsgSender {
     private int view; //current view
@@ -146,7 +147,7 @@ public class MsgSender {
     }
 
     public synchronized boolean isMember(String ip) {
-        return this.memberMap.containsKey(ip) || this.lastJoinIp.equals(ip);
+        return this.memberMap.containsKey(ip) || ip.equals(this.lastJoinIp);
     }
 
     public synchronized String createMemberList() {
@@ -154,14 +155,14 @@ public class MsgSender {
         for (Map.Entry<String, Long> entry : memberMap.entrySet()) {
             tmp.append(";").append(entry.getKey());
         }
-        if(!lastJoinIp.equals("")){
+        if(this.lastJoinIp != null){
             tmp.append(";").append(lastJoinIp);
         }
         return tmp.toString();
     }
 
-    public synchronized HashSet<String> getMember() {
-        return (HashSet<String>) this.memberMap.keySet();
+    public synchronized Set<String> getMember() {
+        return (Set<String>) this.memberMap.keySet();
     }
 
     public synchronized Long getLastJoinTimestamp() {
