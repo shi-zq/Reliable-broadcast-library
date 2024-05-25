@@ -15,9 +15,6 @@ public class AliveSender implements  Runnable{
             this.msgSender.checkTimestamp();
             try {
                 Thread.sleep(5000);
-                if(debug){
-                    System.out.println("Alive sender sleep 5s");
-                }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
