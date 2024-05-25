@@ -140,6 +140,7 @@ public class MsgReceiver implements Runnable {
         String[] t = s.split(";");
         HashSet<String> tmp = new HashSet<>(Arrays.asList(t));
         //set dei membri ricevuti
+        //add if check member list here
         switch(this.state) {
             case(Constants.STATE_NEW):
                 //ignored
