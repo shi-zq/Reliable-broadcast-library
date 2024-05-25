@@ -116,6 +116,10 @@ public class MsgReceiver implements Runnable {
                 break;
             case(Constants.STATE_JOINING):
                 msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINING);
+                retry++;
+                if(retry > 3) {
+                    this.setJoined(0);
+                }
                 //messaggi ignorato semplicemente
                 break;
             case(Constants.STATE_JOINED):
@@ -124,8 +128,16 @@ public class MsgReceiver implements Runnable {
                 this.msgSender.setLastJoin(msg.getFrom(), msg.getTimestamp());
                 this.generateendMap();
                 this.endMap.put(msg.getFrom(), false);// questo e il nuovo membro va aggiunto pure
+                if(debug) {
+                    for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
+                        System.out.println(entry.getKey() + "=" + entry.getValue());
+                    }
+                }
                 if(messageBuffer.isMessageQueueEmpty()) {
                     this.msgSender.sendEnd();
+                    if(debug) {
+                        System.out.println("HandleJoin send end");
+                    }
                 }
                 break;
             case(Constants.STATE_CHANGE):
@@ -156,8 +168,16 @@ public class MsgReceiver implements Runnable {
                         this.msgSender.setView(msg.getView());
                         this.generateendMap();
                         this.endMap.replace(msg.getFrom(), true);
+                        if(debug) {
+                            for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
+                                System.out.println(entry.getKey() + "=" + entry.getValue());
+                            }
+                        }
                         if(messageBuffer.isMessageQueueEmpty()){
                             this.msgSender.sendEnd();//dovrebbe essere vuoto dato che sono nello stato joining
+                            if(debug) {
+                                System.out.println("HandleEnd send end");
+                            }
                         }
                     }
                     else {
@@ -189,7 +209,6 @@ public class MsgReceiver implements Runnable {
                         }// i am not allowed to join wait 1s and retry
                     }
                 }
-
                 break;
             case (Constants.STATE_JOINED):
                 msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINED);
@@ -202,6 +221,12 @@ public class MsgReceiver implements Runnable {
                     this.generateendMap();
                     this.endMap.put(msgSender.getLastJoinIp(), false);
                     this.endMap.replace(msg.getFrom(), true);
+                    if(debug) {
+                        for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
+                            System.out.println(entry.getKey() + "=" + entry.getValue());
+                        }
+                    }
+
                 }
                 else {
                     //this a remove
@@ -214,6 +239,11 @@ public class MsgReceiver implements Runnable {
                     this.generateendMap();
                     this.endMap.remove(this.msgSender.getLastRemoveIp());//non ricevero mai il ACK da questo
                     this.endMap.replace(msg.getFrom(), true);
+                    if(debug) {
+                        for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
+                            System.out.println(entry.getKey() + "=" + entry.getValue());
+                        }
+                    }
                 }
                 if(messageBuffer.isMessageQueueEmpty()) {
                     this.msgSender.sendEnd();
@@ -234,6 +264,11 @@ public class MsgReceiver implements Runnable {
                             this.generateendMap();
                             this.endMap.put(this.msgSender.getLastJoinIp(), false);
                             this.endMap.replace(msg.getFrom(), true);
+                            if(debug) {
+                                for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
+                                    System.out.println(entry.getKey() + "=" + entry.getValue());
+                                }
+                            }
                             if (messageBuffer.isMessageQueueEmpty()) {
                                 this.msgSender.sendEnd();
                             }
@@ -254,6 +289,9 @@ public class MsgReceiver implements Runnable {
                         this.endMap.replace(msg.getFrom(), true);
                         if(messageBuffer.isMessageQueueEmpty()){
                             this.msgSender.sendEnd();
+                            if(debug) {
+                                System.out.println("HandleEnd send end");
+                            }
                         }
                     }
                 }
@@ -321,11 +359,7 @@ public class MsgReceiver implements Runnable {
                 case (Constants.STATE_JOINING):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINING);
                     if(this.endMap == null) {
-                        retry++;
-                    }
-                    if(retry > 2) {
-                        this.setJoined(msg.getView()); // i am alone so i am the member now
-                        System.out.println("iam in");
+                        this.msgSender.sendJoin();
                     }
                     this.msgSender.update(msg.getFrom(), msg.getTimestamp());
                     break;
@@ -407,11 +441,6 @@ public class MsgReceiver implements Runnable {
         this.endMap = new HashMap<>();
         for(String a : msgSender.getMember()) {
             this.endMap.put(a, false);
-        }
-        if(debug) {
-            for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
-                System.out.println(entry.getKey() + "=" + entry.getValue());
-            }
         }
     }
 
