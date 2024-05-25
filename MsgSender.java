@@ -123,10 +123,10 @@ public class MsgSender {
 
     public synchronized void checkTimestamp() {
         Long now = System.currentTimeMillis();
-        for(String key : memberMap.keySet()) {
-            if(now - memberMap.get(key) > 5000*3) {
-                if(!key.equals(this.lastRemoveIp)){
-                    this.sendDrop(key);
+        for(Map.Entry<String, Long> entry : memberMap.entrySet()) {
+            if(now - entry.getValue() > 5000*3) {
+                if(!entry.getKey().equals(this.lastRemoveIp)){
+                    this.sendDrop(entry.getKey());
                 }
             }
         }
@@ -138,9 +138,7 @@ public class MsgSender {
     }
 
     public synchronized void update(String ip, Long time) {
-        if(memberMap.containsKey(ip)) {
-            this.memberMap.replace(ip, time);
-        }
+        this.memberMap.replace(ip, time);
         if(ip.equals(lastJoinIp)) {
             this.lastJoinIpAlive = time;
         }
@@ -153,10 +151,10 @@ public class MsgSender {
     public synchronized String createMemberList() {
         StringBuilder tmp = new StringBuilder();
         for (Map.Entry<String, Long> entry : memberMap.entrySet()) {
-            tmp.append(";").append(entry.getKey());
+            tmp.append(entry.getKey()).append(";");
         }
         if(this.lastJoinIp != null){
-            tmp.append(";").append(lastJoinIp);
+            tmp.append(lastJoinIp).append(";");
         }
         return tmp.toString();
     }
@@ -197,10 +195,6 @@ public class MsgSender {
 
     public synchronized void setFalse() {
         this.sending = false;
-        this.lastRemoveIp = null;
-        this.lastJoinIp = null;
-        this.lastJoinTimestamp = 0L;
-        this.lastJoinIpAlive = 0L;
     }
 
     public synchronized void clearLast() {
