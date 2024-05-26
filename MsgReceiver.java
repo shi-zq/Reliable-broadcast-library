@@ -108,6 +108,7 @@ public class MsgReceiver implements Runnable{
                 break;
             case(Constants.STATE_JOINING):
                 msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINING);
+                //messaggi ignorato semplicemente
                 break;
             case(Constants.STATE_JOINED):
                 msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINED);
@@ -155,7 +156,7 @@ public class MsgReceiver implements Runnable{
                             this.msgSender.setMemberMap(tmp);
                             this.msgSender.setView(msg.getView());
                             this.generateendMap();
-                            this.endMap.put(this.msgSender.getLastJoinIp(), true);
+                            this.endMap.put(this.msgSender.getLastJoinIp(), false);
                             this.endMap.replace(msg.getFrom(), true);
                             if(this.msgSender.getLastRemoveIp() != null){
                                 this.endMap.replace(this.msgSender.getLastRemoveIp(), true);//ho ricevuto un remove primo del mio primo end, percio lo segno come true in caso di shadow
@@ -192,6 +193,12 @@ public class MsgReceiver implements Runnable{
                             }
                         }
                     }
+                    else{
+                        if(tmp.size() == 1){
+                            //qualcun'altro ha gia finito il processo di join
+                            this.setNew();
+                        }
+                    }
                     break;
                 case(Constants.STATE_JOINED):
                     msgLogger.printLog(msg, Constants.MSG_SUCC, null, Constants.STATE_JOINED);
@@ -209,6 +216,7 @@ public class MsgReceiver implements Runnable{
                                 System.out.println("endMap state");
                                 System.out.println(entry.getKey() + "=" + entry.getValue());
                             }
+                            System.out.println("MsgReceiver: from " + this.state + " to " + Constants.STATE_CHANGE + " new member: " + this.msgSender.getLastJoinIp()  );
                         }
                     }
                     else{
@@ -227,6 +235,7 @@ public class MsgReceiver implements Runnable{
                                 System.out.println("endMap state");
                                 System.out.println(entry.getKey() + "=" + entry.getValue());
                             }
+                            System.out.println("MsgReceiver: from " + this.state + " to " + Constants.STATE_CHANGE + " drop member: " + this.msgSender.getLastRemoveIp());
                         }
                     }
                     if(messageBuffer.isMessageQueueEmpty()){
@@ -253,6 +262,7 @@ public class MsgReceiver implements Runnable{
                                         System.out.println("endMap state");
                                         System.out.println(entry.getKey() + "=" + entry.getValue());
                                     }
+                                    System.out.println("MsgReceiver: from " + this.state + " to " + Constants.STATE_CHANGE + " new member: " + this.msgSender.getLastJoinIp());
                                 }
                                 if(messageBuffer.isMessageQueueEmpty()){
                                     this.msgSender.sendEnd();
@@ -276,6 +286,7 @@ public class MsgReceiver implements Runnable{
                                     System.out.println("endMap state");
                                     System.out.println(entry.getKey() + "=" + entry.getValue());
                                 }
+                                System.out.println("MsgReceiver: from " + this.state + " to " + Constants.STATE_CHANGE + " drop member: " + this.msgSender.getLastRemoveIp());
                             }
                             if(messageBuffer.isMessageQueueEmpty()){
                                 this.msgSender.sendEnd();
@@ -379,7 +390,7 @@ public class MsgReceiver implements Runnable{
     }
 
     public void handleDrop(ReliableMsg msg) throws IOException{
-        if(msgSender.isMember(msg.getFrom())){
+        if(this.msgSender.isMember(msg.getFrom()) && this.msgSender.getView() == msg.getView()){
             switch(this.state){
                 case(Constants.STATE_NEW):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_NEW);
@@ -389,6 +400,13 @@ public class MsgReceiver implements Runnable{
                     if(this.endMap != null){
                         this.msgSender.setLastRemoveIpShadow(msg.getBody()); //purtroppo gia ho fatto un join, cerco di rimediare
                         this.endMap.replace(this.msgSender.getLastRemoveIp(), true);
+                        if(debug){
+                            for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()){
+                                System.out.println("endMap state");
+                                System.out.println(entry.getKey() + "=" + entry.getValue());
+                            }
+                            System.out.println("MsgReceiver: from " + this.state + " to " + Constants.STATE_JOINING + " drop member: " + this.msgSender.getLastRemoveIp());
+                        }
                         if(this.checkendMap()){
                             this.setJoined(msg.getView());
                         }
@@ -403,6 +421,13 @@ public class MsgReceiver implements Runnable{
                     this.msgSender.setLastRemoveIp(msg.getBody());
                     this.generateendMap();
                     this.endMap.remove(msg.getBody());//rimuove il che non serve
+                    if(debug){
+                        for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()){
+                            System.out.println("endMap state");
+                            System.out.println(entry.getKey() + "=" + entry.getValue());
+                        }
+                        System.out.println("MsgReceiver: from " + this.state + " to " + Constants.STATE_CHANGE + " drop member: " + this.msgSender.getLastRemoveIp());
+                    }
                     if(messageBuffer.isMessageQueueEmpty()){
                         this.msgSender.sendEnd();
                     }
@@ -411,6 +436,13 @@ public class MsgReceiver implements Runnable{
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_CHANGE);
                     this.msgSender.setLastRemoveIpShadow(msg.getBody());
                     this.endMap.replace(this.msgSender.getLastRemoveIp(), true);//shadow remove
+                    if(debug){
+                        for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()){
+                            System.out.println("endMap state");
+                            System.out.println(entry.getKey() + "=" + entry.getValue());
+                        }
+                        System.out.println("MsgReceiver: from " + this.state + " to " + Constants.STATE_CHANGE + " drop member: " + this.msgSender.getLastRemoveIp());
+                    }
                     if(this.checkendMap()){
                         this.setJoined(msg.getView());
                     }
@@ -426,9 +458,6 @@ public class MsgReceiver implements Runnable{
     }
 
     public void setJoining(){
-        if(debug){
-            System.out.println("MsgReceiver from " + this.state + " to " + Constants.STATE_JOINING);
-        }
         this.state = Constants.STATE_JOINING;
     }
 
