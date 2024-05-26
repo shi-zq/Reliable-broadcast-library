@@ -102,12 +102,13 @@ public class MsgSender{
         return false;
     }
 
-    public synchronized void sendACK(String messageID)  {
-        ReliableMsg ack = new ReliableMsg(Constants.MSG_ACK, this.ip, System.currentTimeMillis(), view, messageID, clock.getScalarclock(), this.messageSequenceNumber);
-        try{
+    public synchronized void sendACK(ReliableMsg message)  {
+        ReliableMsg ack = new ReliableMsg(Constants.MSG_ACK, this.ip, System.currentTimeMillis(), view, getMessageId(message), clock.getScalarclock(), this.messageSequenceNumber);
+        try {
             sendMsgToSocket(ack);
-        }
-        catch(IOException e){
+            messageSequenceNumber = messageSequenceNumber + 1;
+            clock.updateScalarclock(message.getScalarclock());
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -248,5 +249,9 @@ public class MsgSender{
     }
     public synchronized void updateView(int view){
         this.view = view+1;
+    }
+
+    public String getMessageId(ReliableMsg message) {
+        return message.getFrom() + ":" + message.getScalarclock();
     }
 }

@@ -301,7 +301,9 @@ public class MsgReceiver implements Runnable{
         }
     }
 
-    public void handleACK(ReliableMsg msg) throws IOException{
+    public void handleACK(ReliableMsg msg) throws IOException {
+        Set<String> tempMembers = msgSender.getMember();
+        tempMembers.remove(this.msgSender.getLastRemoveIp());
         if (msgSender.isMember(msg.getFrom())) {
             switch (this.state) {
                 case (Constants.STATE_NEW):
@@ -311,13 +313,17 @@ public class MsgReceiver implements Runnable{
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINING);
                     break;
                 case (Constants.STATE_JOINED):
-                    messageBuffer.receiveACK(msg);
-                    messageBuffer.delivery(msgSender.getMember());
+                    clock.updateScalarclock(msg.getScalarclock());
+                    messageBuffer.newMessage(msg,tempMembers);
+                    //messageBuffer.receiveACK(msg);
+                    //messageBuffer.delivery(msgSender.getMember());
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINED);
                     break;
                 case (Constants.STATE_CHANGE):
-                    messageBuffer.receiveACK(msg);
-                    messageBuffer.delivery(msgSender.getMember());
+                    clock.updateScalarclock(msg.getScalarclock());
+                    messageBuffer.newMessage(msg,tempMembers);
+                    //messageBuffer.receiveACK(msg);
+                    //messageBuffer.delivery(msgSender.getMember());
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_CHANGE);
                     break;
             }
@@ -325,25 +331,28 @@ public class MsgReceiver implements Runnable{
     }
 
     public void handleMsg(ReliableMsg msg) throws IOException {
-        if(msgSender.isMember(msg.getFrom()) && msg.getView() == this.msgSender.getView()){
-            switch(this.state){
-                case(Constants.STATE_NEW):
+        Set<String> tempMembers = msgSender.getMember();
+        tempMembers.remove(this.msgSender.getLastRemoveIp());
+        if (msgSender.isMember(msg.getFrom()) && msg.getView() == this.msgSender.getView()) {
+
+            switch (this.state) {
+                case (Constants.STATE_NEW):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_NEW);
                     break;
-                case(Constants.STATE_JOINING):
+                case (Constants.STATE_JOINING):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINING);
                     break;
-                case(Constants.STATE_JOINED):
+                case (Constants.STATE_JOINED):
                     clock.updateScalarclock(msg.getScalarclock());
-                    msgSender.sendACK(messageBuffer.getMessageId(msg));
-                    messageBuffer.newMessage(msg);
+                    msgSender.sendACK(msg);
+                    messageBuffer.newMessage(msg, tempMembers);
                     messageBuffer.newMessageACK(msg);
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINED);
                     break;
-                case(Constants.STATE_CHANGE):
+                case (Constants.STATE_CHANGE):
                     clock.updateScalarclock(msg.getScalarclock());
-                    msgSender.sendACK(messageBuffer.getMessageId(msg));
-                    messageBuffer.newMessage(msg);
+                    msgSender.sendACK(msg);
+                    messageBuffer.newMessage(msg, tempMembers);
                     messageBuffer.newMessageACK(msg);
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_CHANGE);
                     break;
