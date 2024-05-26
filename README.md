@@ -1,47 +1,55 @@
-# Reliable-broadcast-library
+# slides
 
-## AckMap
-Contiene la struttura dati per salvare gli ACK ricevuti. 
+## general part
+名字？
+负责的部分？
 
-## AliveSender
-ha compito di inviare ALIVE con un certo intervallo
+## architecture part
+得画一个架构图
 
-## IndexGenerator
-Un interfaccia per nascondere le diverse generatori di index 
+UDP based
 
-## LogicalClock
-ren tao
+send-receive using broadcast on 255.255.255.255 port 5000
 
-## MsgReceiver
-Ha solo il compito di ricevere dei msg e usare handle per gestire i messaggi ricevuti
-ha 4 stati new-joining-joined-addmember(removemember)
-il limite di buff di ricezione \`e 4096 bytes
+## sender-receiver
 
-## MsgSender
-Usato per invio dei dati, ha un campo view per buttare messaggi in ritardo e sending per bloccare invio dei messaggi
-in caso di cambio di view
-Ha diversi sendMsg gia incluso per velocizzare il invio di messaggi 
-Ha anche delle funzioni per il controllo dei ultimi ALIVE
+6 types of msg
+type of msg
+ACK 收到消息发送ACK
+ALIVE 告诉主机自己的最后存活时间
+MSG 发送消息用
+DROP drop someone out if lastalive greater 5000*3 ago
+JOIN used for join the group
+END 提示大家自己已经完成了谁加入or谁踢出
 
-## ReliableBroadcast 
-Tutto viene wrappato sotto da questo classe e permette utente di inviare, rivecere, terminare,  avviare 
+要描写ReliableMsg吗？（我感觉要）
 
 ## ReliableMsg
-La struttura del messaggio ,in caso di neccessita possiamo aggiungere dei campi 
 
-## SharedArraylist
-salva i messaggi ACK e non ACK 
+type: msg的type
+from: who is sender
+timestamp: send time
+view: view
+body: msg内容
+sequencenumber: 排序用
+scalarclock：排序用
 
-## Join process
-ALIVE viene inviato comunque 
-Il NEW client invia JOIN
-i JOINED client invia END quando hanno finito di processare i messaggi non ACK, la struttura della risposta \`e
-La struttura del END type;ip;ip;....;ip
+## join, drop end part
 
-## parte mancante
-join e remove dovrebbe essere simile il processo
-ResendACK e ResendMsg ancora da implementare
-ResendEnd come facciamo?
-Penso che tutto dovrebbe fatto AliveSender che continua invio di ALIVE che sveglia 
-MsgReceiver a fare il controllo dello stato e reinvio in caso di perdita dei dati
-ACKmap 全错，全部的msg应该在同一个list里直到下一个view刷新吗？还是需要需要重新一个hashmap来记录每个client的最后一个msg
+drop优先级比join高
+
+end is a decision of who join or who leave, i cannt send 2 different end if didn't receive end from another client
+i can change my end only if i receive a end from another client
+only 1 change of member can happen join or drop(drop优先级比join高)
+
+(end join)->receive drop-> shadowremoveip, i cannt send another end since it could create problem with double end
+(end join)->receive end(drop)->change my decision from join to end
+(end drop)->end(join)-> ignore
+(end drop)->drop or join is irrelevant
+## MSG ACK 
+这部分有可能得加rentao的设计
+
+## 排序部分
+
+
+

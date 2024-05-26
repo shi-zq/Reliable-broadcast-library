@@ -209,6 +209,7 @@ public class MsgSender{
         this.lastJoinIp = null;
         this.lastJoinTimestamp = 0L;
         this.lastJoinIpAlive = 0L;
+        //我觉得reset应该放到这里 //shi
     }
 
     public synchronized void setFalse(){
