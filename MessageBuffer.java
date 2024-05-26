@@ -43,9 +43,19 @@ public class MessageBuffer {
         } else {
             queue.add(msg);
         }
-        System.out.println("This is queue" + queue);
-        System.out.println("These are members" + members);
-        System.out.println("This is expected SN" + expectedSequenceNumber);
+        //
+        System.out.println("This is queue of" + processId);
+        for(ReliableMsg tmp : queue){
+            System.out.println("type : " + tmp.getType() + ";" + "from "  + tmp.getFrom() + ";" + "sequence number : " + tmp.getSequenceNumber() + ";" + "clock : " + tmp.getScalarclock());
+        }
+        System.out.println("These are members");
+        for(String tmp : members) {
+            System.out.println(tmp);
+        }
+        System.out.println("This is expected SN");
+        for(Map.Entry<String, Integer> entry : expectedSequenceNumber.entrySet()) {
+            System.out.println("ip : " + entry.getKey() + ";" + "expectedSequenceNumber : " + entry.getValue());
+        }
         System.out.println("This is message SN" + seqNumber);
     }
 
