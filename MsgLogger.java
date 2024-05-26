@@ -43,7 +43,7 @@ public class MsgLogger {
                 + "body : " + msg.getBody()
                 + "\n";
         printWriter.print(info);
-        System.out.println(info);
+        //System.out.println(info);
         printWriter.close();
     }
 
