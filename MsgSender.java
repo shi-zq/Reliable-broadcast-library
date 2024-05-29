@@ -18,6 +18,7 @@ public class MsgSender{
     private InetAddress broadcast; // broadcastaddress
     private DatagramSocket sendSocket; //socket to send msg
     private HashMap<String, Long> memberMap; //current member and last live time
+    private HashSet<String> tempMember;
     private Long lastJoinTimestamp;
     private String lastJoinIp;
     private Long lastJoinIpAlive;
@@ -36,6 +37,7 @@ public class MsgSender{
         this.sendSocket.setBroadcast(true);
         this.sending = false;
         this.memberMap = new HashMap<>();
+        this.tempMember = new HashSet<>();
         this.lastRemoveIp = null;
         this.lastJoinIp = null;
         this.lastJoinTimestamp = 0L;
@@ -202,9 +204,11 @@ public class MsgSender{
         this.sending = true;
         if(lastJoinIp != null){
             memberMap.put(this.lastJoinIp, this.lastJoinIpAlive);
+            tempMember.add(this.lastJoinIp);
         }
         if(awareness){
             memberMap.keySet().remove(this.lastRemoveIp);
+            tempMember.remove(this.lastRemoveIp);
         }
         this.lastRemoveIp = null;
         this.lastJoinIp = null;
@@ -229,11 +233,13 @@ public class MsgSender{
         this.lastJoinIp = null;
         this.lastJoinTimestamp = 0L;
         this.lastJoinIpAlive = 0L;
+        this.tempMember.remove(lastRemoveIp);
     }
 
     public synchronized void setLastRemoveIpShadow(String lastRemoveIp){
         this.lastRemoveIp = lastRemoveIp;
         awareness = false;
+        this.tempMember.remove(lastRemoveIp);
     }
 
     public synchronized void setMemberMap(HashSet<String> member){
@@ -251,7 +257,11 @@ public class MsgSender{
         this.view = view+1;
     }
 
-    public String getMessageId(ReliableMsg message) {
+    public synchronized String getMessageId(ReliableMsg message) {
         return message.getFrom() + ":" + message.getScalarclock();
+    }
+
+    public synchronized HashSet<String> getTempMember() {
+        return this.tempMember;
     }
 }
