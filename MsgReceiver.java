@@ -137,7 +137,7 @@ public class MsgReceiver implements Runnable{
     }
 
     public void handleEnd(ReliableMsg msg) throws IOException{
-        if(msg.getView() == this.msgSender.getView()){
+        if(true){
             String s = msg.getBody();
             String[] t = s.split(";");
             HashSet<String> tmp = new HashSet<>(Arrays.asList(t));
@@ -302,7 +302,7 @@ public class MsgReceiver implements Runnable{
     }
 
     public void handleACK(ReliableMsg msg) throws IOException {
-        if (msgSender.isMember(msg.getFrom())) {
+        if (true)) {
             switch (this.state) {
                 case (Constants.STATE_NEW):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_NEW);
@@ -329,7 +329,7 @@ public class MsgReceiver implements Runnable{
     }
 
     public void handleMsg(ReliableMsg msg) throws IOException {
-        if (msgSender.isMember(msg.getFrom()) && msg.getView() == this.msgSender.getView()) {
+        if (true) {
 
             switch (this.state) {
                 case (Constants.STATE_NEW):
@@ -357,7 +357,7 @@ public class MsgReceiver implements Runnable{
     }
 
     public void handleAlive(ReliableMsg msg) throws IOException{
-        if(msgSender.isMember(msg.getFrom())){
+        if(true){
             switch(this.state) {
                 case(Constants.STATE_NEW):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_NEW);
@@ -391,7 +391,7 @@ public class MsgReceiver implements Runnable{
     }
 
     public void handleDrop(ReliableMsg msg) throws IOException{
-        if(this.msgSender.isMember(msg.getFrom()) && this.msgSender.getView() == msg.getView()){
+        if(true){
             switch(this.state){
                 case(Constants.STATE_NEW):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_NEW);
