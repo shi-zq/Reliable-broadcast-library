@@ -71,7 +71,7 @@ public class MsgSender{
 
     public synchronized void sendEnd() {
         ReliableMsg end;
-        if(this.getLastJoinTimestamp() != 0) {
+        if(this.lastJoinIp != null) {
             end = new ReliableMsg(Constants.MSG_END, this.ip, this.getLastJoinTimestamp(), view, createMemberList(), -1, -1);
 
         }
@@ -186,7 +186,7 @@ public class MsgSender{
             memberMap.put(this.lastJoinIp, System.currentTimeMillis());
             tempMember.add(this.lastJoinIp);
         }
-        if(awareness){
+        if(awareness && this.lastRemoveIp !=null) {
             memberMap.keySet().remove(this.lastRemoveIp);
             tempMember.remove(this.lastRemoveIp);
         }
@@ -194,8 +194,7 @@ public class MsgSender{
         this.lastJoinIp = null;
         this.lastJoinTimestamp = 0L;
         this.clock.reset();
-        this.messageSequenceNumber = 3;
-        //我觉得reset应该放到这里 //shi
+        this.messageSequenceNumber = 0;
     }
 
     public synchronized void setFalse(){
@@ -212,6 +211,7 @@ public class MsgSender{
         awareness = true;
         this.lastJoinIp = null;
         this.lastJoinTimestamp = 0L;
+
         this.tempMember.remove(lastRemoveIp);
     }
 
@@ -222,16 +222,15 @@ public class MsgSender{
     }
 
     public synchronized void setMemberMap(HashSet<String> member){
-        //usato solo da joinning, percio il mio ip dovrebbe essere lastjoin
         for(String tmp : member) {
             this.memberMap.put(tmp, System.currentTimeMillis());
         }
     }
 
-    public synchronized void setView(int view){
+    public synchronized void setView(int view) {
         this.view = view;
     }
-    public synchronized void updateView(int view){
+    public synchronized void updateView(int view) {
         this.view = view+1;
     }
 
