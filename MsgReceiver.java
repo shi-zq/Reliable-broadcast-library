@@ -476,6 +476,7 @@ public class MsgReceiver implements Runnable{
         this.msgSender.setTrue();
         this.msgSender.updateView(view);
         this.messageBuffer.updateFIFOQueue(this.msgSender.getMember());
+        this.messageBuffer.reset();
         //我觉得全部的reset都应该放到这里 //shi
     }
 

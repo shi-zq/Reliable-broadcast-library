@@ -214,6 +214,8 @@ public class MsgSender{
         this.lastJoinIp = null;
         this.lastJoinTimestamp = 0L;
         this.lastJoinIpAlive = 0L;
+        this.clock.reset();
+        this.messageSequenceNumber = 0;
         //我觉得reset应该放到这里 //shi
     }
 

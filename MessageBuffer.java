@@ -109,4 +109,8 @@ public class MessageBuffer {
         return messageQueue.isEmpty();
     }
 
+    public synchronized void reset() {
+        this.ackManager.reset();
+    }
+
 }
