@@ -368,10 +368,6 @@ public class MsgReceiver implements Runnable{
                         this.retry++;
                         if(this.retry > 1){
                             this.msgSender.sendEnd(this.ip);
-                            this.setJoined(0);
-                            if(debug){
-                                System.out.println("MsgReceiver from " + this.state + " to " + Constants.STATE_JOINED + " new member: " + msg.getFrom());
-                            }
                         }
                     }
                     else{
