@@ -18,12 +18,12 @@ public class MsgSender{
     private InetAddress broadcast; // broadcastaddress
     private DatagramSocket sendSocket; //socket to send msg
     private HashMap<String, Long> memberMap; //current member and last live time
-    private HashSet<String> tempMember;
     private Long lastJoinTimestamp;
     private String lastJoinIp;
-    private Long lastJoinIpAlive;
     private String lastRemoveIp;
     private boolean awareness;
+
+    private HashSet<String> tempMember;
     private int messageSequenceNumber;  // Used for FIFO
     private LogicalClock clock;
     //Sender and Receiver share a single logical clock.
@@ -37,11 +37,11 @@ public class MsgSender{
         this.sendSocket.setBroadcast(true);
         this.sending = false;
         this.memberMap = new HashMap<>();
-        this.tempMember = new HashSet<>();
         this.lastRemoveIp = null;
         this.lastJoinIp = null;
         this.lastJoinTimestamp = 0L;
-        this.lastJoinIpAlive = 0L;
+
+        this.tempMember = new HashSet<>();
         this.messageSequenceNumber = 0;
         this.clock = clock;
     }
@@ -69,17 +69,15 @@ public class MsgSender{
         }
     }
 
-    public synchronized void sendEnd(String ip) {
-        ReliableMsg end = new ReliableMsg(Constants.MSG_END, ip, System.currentTimeMillis(), view, ip, -1, -1);
-        try{
-            sendMsgToSocket(end);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     public synchronized void sendEnd() {
-        ReliableMsg end = new ReliableMsg(Constants.MSG_END, ip, System.currentTimeMillis(), view, createMemberList(), -1, -1);
+        ReliableMsg end;
+        if(this.getLastJoinTimestamp() != 0) {
+            end = new ReliableMsg(Constants.MSG_END, this.ip, this.getLastJoinTimestamp(), view, createMemberList(), -1, -1);
+
+        }
+        else {
+            end = new ReliableMsg(Constants.MSG_END, ip, System.currentTimeMillis(), view, createMemberList(), -1, -1);
+        }
         try{
             sendMsgToSocket(end);
         }
@@ -90,12 +88,11 @@ public class MsgSender{
 
     public synchronized boolean sendMsg(String content){
         if(this.sending) {
-            ReliableMsg message = new ReliableMsg(Constants.MSG, ip, System.currentTimeMillis(), view, content, clock.getScalarclock(), this.messageSequenceNumber);
+            ReliableMsg message = new ReliableMsg(Constants.MSG, this.ip, System.currentTimeMillis(), this.view, content, this.clock.getScalarclock(), this.messageSequenceNumber);
             try{
                 sendMsgToSocket(message);
                 messageSequenceNumber = messageSequenceNumber + 1;
                 clock.updateScalarclock(message.getScalarclock());
-                System.out.println("Sending " + content + " to " + ip);
             }
             catch(IOException e){
                 e.printStackTrace();
@@ -105,18 +102,18 @@ public class MsgSender{
     }
 
     public synchronized void sendACK(ReliableMsg message)  {
-        ReliableMsg ack = new ReliableMsg(Constants.MSG_ACK, this.ip, System.currentTimeMillis(), view, getMessageId(message), clock.getScalarclock(), this.messageSequenceNumber);
+        ReliableMsg ack = new ReliableMsg(Constants.MSG_ACK, this.ip, System.currentTimeMillis(), this.view, getMessageId(message), clock.getScalarclock(), this.messageSequenceNumber);
         try {
             sendMsgToSocket(ack);
-            messageSequenceNumber = messageSequenceNumber + 1;
+            messageSequenceNumber = messageSequenceNumber - 2;
             clock.updateScalarclock(message.getScalarclock());
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public synchronized void sendDrop(String ip){
-        ReliableMsg drop = new ReliableMsg(Constants.MSG_DROP, this.ip, System.currentTimeMillis(), view, ip, -1, -1);
+    public synchronized void sendDrop(){
+        ReliableMsg drop = new ReliableMsg(Constants.MSG_DROP, this.ip, System.currentTimeMillis(), this.view, this.getLastRemoveIp(), -1, -1);
         try{
             sendMsgToSocket(drop);
         }
@@ -146,39 +143,22 @@ public class MsgSender{
         Long now = System.currentTimeMillis();
         for(Map.Entry<String, Long> entry : memberMap.entrySet()) {
             if((now - entry.getValue()) > 5000*3){
-                if(this.lastRemoveIp!= null && !entry.getKey().equals(this.lastRemoveIp)){
-                    this.sendDrop(entry.getKey());
+                if(this.lastRemoveIp == null) {
+                    this.sendDrop();
                 }
             }
         }
-        if((now - lastJoinIpAlive) > 5000*3){
-            if(this.lastJoinIp != null && this.lastJoinIp.equals(this.lastRemoveIp)){
-                this.sendDrop(lastJoinIp);
+        if((now - this.lastJoinTimestamp) > 5000*3){
+            if(this.lastRemoveIp == null) {
+                this.sendDrop();
             }
         }
     }
 
     public synchronized void update(String ip, Long time){
         this.memberMap.replace(ip, time);
-        if(ip.equals(lastJoinIp)) {
-            this.lastJoinIpAlive = time;
-        }
     }
 
-    public synchronized boolean isMember(String ip){
-        return this.memberMap.containsKey(ip) || ip.equals(this.lastJoinIp);
-    }
-
-    public synchronized String createMemberList(){
-        StringBuilder tmp = new StringBuilder();
-        for(Map.Entry<String, Long> entry : memberMap.entrySet()){
-            tmp.append(entry.getKey()).append(";");
-        }
-        if(this.lastJoinIp != null){
-            tmp.append(lastJoinIp).append(";");
-        }
-        return tmp.toString();
-    }
 
     public synchronized Set<String> getMember(){
         return this.memberMap.keySet();
@@ -203,7 +183,7 @@ public class MsgSender{
     public synchronized void setTrue(){
         this.sending = true;
         if(lastJoinIp != null){
-            memberMap.put(this.lastJoinIp, this.lastJoinIpAlive);
+            memberMap.put(this.lastJoinIp, System.currentTimeMillis());
             tempMember.add(this.lastJoinIp);
         }
         if(awareness){
@@ -213,9 +193,8 @@ public class MsgSender{
         this.lastRemoveIp = null;
         this.lastJoinIp = null;
         this.lastJoinTimestamp = 0L;
-        this.lastJoinIpAlive = 0L;
         this.clock.reset();
-        this.messageSequenceNumber = 0;
+        this.messageSequenceNumber = 3;
         //我觉得reset应该放到这里 //shi
     }
 
@@ -226,7 +205,6 @@ public class MsgSender{
     public synchronized void setLastJoin(String ip, Long time){
         this.lastJoinIp = ip;
         this.lastJoinTimestamp = time;
-        this.lastJoinIpAlive = time;
     }
 
     public synchronized void setLastRemoveIp(String lastRemoveIp){
@@ -234,7 +212,6 @@ public class MsgSender{
         awareness = true;
         this.lastJoinIp = null;
         this.lastJoinTimestamp = 0L;
-        this.lastJoinIpAlive = 0L;
         this.tempMember.remove(lastRemoveIp);
     }
 
@@ -246,7 +223,6 @@ public class MsgSender{
 
     public synchronized void setMemberMap(HashSet<String> member){
         //usato solo da joinning, percio il mio ip dovrebbe essere lastjoin
-        member.remove(this.ip);
         for(String tmp : member) {
             this.memberMap.put(tmp, System.currentTimeMillis());
         }
@@ -265,5 +241,21 @@ public class MsgSender{
 
     public synchronized HashSet<String> getTempMember() {
         return this.tempMember;
+    }
+
+    public synchronized String createMemberList(){
+        StringBuilder tmp = new StringBuilder();
+        for(Map.Entry<String, Long> entry : memberMap.entrySet()){
+            if(this.lastRemoveIp != null && this.lastRemoveIp.equals(entry.getKey()) && awareness) {
+
+            }
+            else {
+                tmp.append(entry.getKey()).append(";");
+            }
+        }
+        if(this.lastJoinIp != null){
+            tmp.append(lastJoinIp).append(";");
+        }
+        return tmp.toString();
     }
 }
