@@ -22,13 +22,14 @@ public class MsgSender{
     private String lastJoinIp;
     private String lastRemoveIp;
     private boolean awareness;
+    private boolean debug;
 
     private HashSet<String> tempMember;
     private int messageSequenceNumber;  // Used for FIFO
     private LogicalClock clock;
     //Sender and Receiver share a single logical clock.
 
-    public MsgSender(String ip, int port, InetAddress broadcast, LogicalClock clock) throws SocketException{
+    public MsgSender(String ip, int port, InetAddress broadcast, LogicalClock clock, boolean debug) throws SocketException{
         this.view = 0;
         this.ip = ip;
         this.port = port;
@@ -40,6 +41,7 @@ public class MsgSender{
         this.lastRemoveIp = null;
         this.lastJoinIp = null;
         this.lastJoinTimestamp = 0L;
+        this.debug = debug;
 
         this.tempMember = new HashSet<>();
         this.messageSequenceNumber = 0;
@@ -112,8 +114,8 @@ public class MsgSender{
         }
     }
 
-    public synchronized void sendDrop(){
-        ReliableMsg drop = new ReliableMsg(Constants.MSG_DROP, this.ip, System.currentTimeMillis(), this.view, this.getLastRemoveIp(), -1, -1);
+    public synchronized void sendDrop(String dropIp){
+        ReliableMsg drop = new ReliableMsg(Constants.MSG_DROP, this.ip, System.currentTimeMillis(), this.view, dropIp, -1, -1);
         try{
             sendMsgToSocket(drop);
         }
@@ -144,15 +146,27 @@ public class MsgSender{
         for(Map.Entry<String, Long> entry : memberMap.entrySet()) {
             if((now - entry.getValue()) > 5000*3){
                 if(this.lastRemoveIp == null) {
-                    this.sendDrop();
+                    this.sendDrop(entry.getKey());
                 }
+            }
+            if(debug) {
+                System.out.println("ip=" + entry.getKey() + " alive=" + entry.getValue());
+            }
+        }
+        if(debug) {
+            if(this.lastJoinIp != null) {
+                System.out.println("ip=" + this.lastJoinIp + " alive=" + this.lastJoinTimestamp);
             }
         }
         if((now - this.lastJoinTimestamp) > 5000*3){
             if(this.lastRemoveIp == null) {
-                this.sendDrop();
+                this.sendDrop(this.lastJoinIp);
+                if(debug) {
+                    System.out.println("lastRemoveIp=" + this.lastRemoveIp);
+                }
             }
         }
+
     }
 
     public synchronized void update(String ip, Long time){
@@ -195,6 +209,7 @@ public class MsgSender{
         this.lastJoinTimestamp = 0L;
         this.clock.reset();
         this.messageSequenceNumber = 0;
+        this.view = view+1;
     }
 
     public synchronized void setFalse(){
@@ -230,9 +245,6 @@ public class MsgSender{
     public synchronized void setView(int view) {
         this.view = view;
     }
-    public synchronized void updateView(int view) {
-        this.view = view+1;
-    }
 
     public synchronized String getMessageId(ReliableMsg message) {
         return message.getFrom() + ":" + message.getScalarclock();
@@ -246,7 +258,7 @@ public class MsgSender{
         StringBuilder tmp = new StringBuilder();
         for(Map.Entry<String, Long> entry : memberMap.entrySet()){
             if(this.lastRemoveIp != null && this.lastRemoveIp.equals(entry.getKey()) && awareness) {
-
+                //non fare niente? saltarlo
             }
             else {
                 tmp.append(entry.getKey()).append(";");
