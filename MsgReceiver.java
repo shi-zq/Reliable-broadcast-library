@@ -130,141 +130,139 @@ public class MsgReceiver implements Runnable {
         }
     }
 
-    public void handleEnd(ReliableMsg msg) throws IOException{
-        if(msg.getView() == this.msgSender.getView()) {
-            String s = msg.getBody();
-            String[] t = s.split(";");
-            HashSet<String> tmp = new HashSet<>(Arrays.asList(t));
-            //crea un hashset dei membri del nuovo view
-            switch(this.state) {
-                case(Constants.STATE_NEW):
-                    //messaggi ignorato semplicemente
-                    msgLogger.printLog(msg, Constants.MSG_SUCC, null, Constants.STATE_NEW);
-                    break;
-                case(Constants.STATE_JOINING):
-                    msgLogger.printLog(msg, Constants.MSG_SUCC, null, Constants.STATE_JOINING);
-                    if(tmp.contains(ip)) {
-                        if(tmp.size() == 1) {
-                            this.endMap.replace(msg.getFrom(), true);
-                        }
-                        else {
-                            if(this.endMap == null) {
-                                tmp.remove(this.ip);//devo rimuovermi dato che il mio ip e su lastjoinip
-                                this.msgSender.setMemberMap(tmp);
-                                this.msgSender.setView(msg.getView());
-                                this.generateendMap();
-                                this.endMap.put(this.msgSender.getLastJoinIp(), false);// metto il mio ip
-                                this.endMap.replace(msg.getFrom(), true);
-                                if(this.msgSender.getLastRemoveIp() != null) {
-                                    this.endMap.replace(this.msgSender.getLastRemoveIp(), true);//controllo se ho shadowremove
-                                }
-                                this.msgSender.sendEnd();
-                            }
-                            else {
-                                this.endMap.replace(msg.getFrom(), true);
-                            }
-                        }
-                        if(this.checkendMap()) {
-                            this.setJoined(msg.getView());
-                        }
+    public void handleEnd(ReliableMsg msg) throws IOException {
+        String s = msg.getBody();
+        String[] t = s.split(";");
+        HashSet<String> tmp = new HashSet<>(Arrays.asList(t));
+        //crea un hashset dei membri del nuovo view
+        switch(this.state) {
+            case(Constants.STATE_NEW):
+                //messaggi ignorato semplicemente
+                msgLogger.printLog(msg, Constants.MSG_SUCC, null, Constants.STATE_NEW);
+                break;
+            case(Constants.STATE_JOINING):
+                msgLogger.printLog(msg, Constants.MSG_SUCC, null, Constants.STATE_JOINING);
+                if(tmp.contains(ip)) {
+                    if(tmp.size() == 1) {
+                        this.endMap.replace(msg.getFrom(), true);
                     }
                     else {
-                        if(this.msgSender.getLastJoinTimestamp() > msg.getTimestamp()) {
-                            this.setNew();
-                        }
-                    }
-                    break;
-                case(Constants.STATE_JOINED):
-                    msgLogger.printLog(msg, Constants.MSG_SUCC, null, Constants.STATE_JOINED);
-                    this.setChange();
-                    if(tmp.size() > this.msgSender.getMember().size()) {
-                        //join
-                        tmp.removeAll(this.msgSender.getMember());
-                        ArrayList<String> arrayTmp = new ArrayList<>(tmp);
-                        this.msgSender.setLastJoin(arrayTmp.get(0), msg.getTimestamp());//cosi trovo quale e il nuovo ip che ha fatto join
-                        this.generateendMap();
-                        this.endMap.put(msgSender.getLastJoinIp(), false);
-                        this.endMap.replace(msg.getFrom(), true);
-                        if(debug) {
-                            System.out.println("endMap state");
-                            for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
-                                System.out.println(entry.getKey() + "=" + entry.getValue());
-                            }
-                        }
-                    }
-                    else{
-                        //remove
-                        for(String a : this.msgSender.getMember()) {
-                            if(!tmp.contains(a)) {
-                                this.msgSender.setLastRemoveIp(a);//trovo il membro da rimuovere
-                            }
-                        }
-                        this.generateendMap();
-                        this.endMap.remove(this.msgSender.getLastRemoveIp());//non ricevero mai il ACK da questo
-                        this.endMap.replace(msg.getFrom(), true);
-                        if(debug) {
-                            System.out.println("endMap state");
-                            for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
-                                System.out.println(entry.getKey() + "=" + entry.getValue());
-                            }
-                        }
-                    }
-                    if(messageBuffer.isMessageQueueEmpty()) {
-                        this.msgSender.sendEnd();
-                    }
-                    break;
-                case(Constants.STATE_CHANGE):
-                    msgLogger.printLog(msg, Constants.MSG_SUCC, null, Constants.STATE_CHANGE);
-                    if(tmp.size() == this.endMap.size()) {
-                        if(tmp.equals(this.endMap.keySet())) {
+                        if(this.endMap == null) {
+                            tmp.remove(this.ip);//devo rimuovermi dato che il mio ip e su lastjoinip
+                            this.msgSender.setMemberMap(tmp);
+                            this.msgSender.setView(msg.getView());
+                            this.generateendMap();
+                            this.endMap.put(this.msgSender.getLastJoinIp(), false);// metto il mio ip
                             this.endMap.replace(msg.getFrom(), true);
-                        }
-                        else {
-                            if(msg.getTimestamp() < msgSender.getLastJoinTimestamp()) {//abbiamo lo stesso size, dato che solo un processo fallisce, sicuramente 'e un join
-                                //ho ricevuto un join piu presto percio devo cambiare la mia scelta
-                                this.endMap.keySet().removeAll(tmp);
-                                ArrayList<String> arrayTmp = new ArrayList<>(this.endMap.keySet());
-                                this.msgSender.setLastJoin(arrayTmp.get(0), msg.getTimestamp());//trovato il nuovo join
-                                this.generateendMap();
-                                this.endMap.put(this.msgSender.getLastJoinIp(), false);
-                                this.endMap.replace(msg.getFrom(), true);
-                                if(debug) {
-                                    System.out.println("endMap state");
-                                    for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
-                                        System.out.println(entry.getKey() + "=" + entry.getValue());
-                                    }
-                                }
-                                if(messageBuffer.isMessageQueueEmpty()) {
-                                    this.msgSender.sendEnd();
-                                }
+                            if(this.msgSender.getLastRemoveIp() != null) {
+                                this.endMap.replace(this.msgSender.getLastRemoveIp(), true);//controllo se ho shadowremove
                             }
-                        }
-                    }
-                    else {
-                        //ho fatto un join e ho ricevuto un remove
-                        //remove ha precedenza su join
-                        this.endMap.keySet().removeAll(tmp);
-                        this.endMap.keySet().remove(this.msgSender.getLastJoinIp());
-                        ArrayList<String> arrayTmp = new ArrayList<>(this.endMap.keySet());
-                        this.msgSender.setLastRemoveIp(arrayTmp.get(0));
-                        this.generateendMap();
-                        this.endMap.remove(this.msgSender.getLastRemoveIp()); //sicuramente non 'e shadow remove
-                        this.endMap.replace(msg.getFrom(), true);
-                        if(debug) {
-                            System.out.println("endMap state");
-                            for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
-                                System.out.println(entry.getKey() + "=" + entry.getValue());
-                            }
-                        }
-                        if(messageBuffer.isMessageQueueEmpty()) {
                             this.msgSender.sendEnd();
+                        }
+                        else {
+                            this.endMap.replace(msg.getFrom(), true);
                         }
                     }
                     if(this.checkendMap()) {
                         this.setJoined(msg.getView());
                     }
-                    break;
-            }
+                }
+                else {
+                    if(tmp.size() == 1 && this.msgSender.getLastJoinTimestamp() > msg.getTimestamp()) {
+                        this.setNew();
+                    }
+                }
+                break;
+            case(Constants.STATE_JOINED):
+                msgLogger.printLog(msg, Constants.MSG_SUCC, null, Constants.STATE_JOINED);
+                this.setChange();
+                if(tmp.size() > this.msgSender.getMember().size()) {
+                    //join
+                    tmp.removeAll(this.msgSender.getMember());
+                    ArrayList<String> arrayTmp = new ArrayList<>(tmp);
+                    this.msgSender.setLastJoin(arrayTmp.get(0), msg.getTimestamp());//cosi trovo quale e il nuovo ip che ha fatto join
+                    this.generateendMap();
+                    this.endMap.put(msgSender.getLastJoinIp(), false);
+                    this.endMap.replace(msg.getFrom(), true);
+                    if(debug) {
+                        System.out.println("endMap state");
+                        for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
+                            System.out.println(entry.getKey() + "=" + entry.getValue());
+                        }
+                    }
+                }
+                else {
+                    //remove
+                    for(String a : this.msgSender.getMember()) {
+                        if(!tmp.contains(a)) {
+                            this.msgSender.setLastRemoveIp(a);//trovo il membro da rimuovere
+                        }
+                    }
+                    this.generateendMap();
+                    this.endMap.remove(this.msgSender.getLastRemoveIp());//non ricevero mai il ACK da questo
+                    this.endMap.replace(msg.getFrom(), true);
+                    if(debug) {
+                        System.out.println("endMap state");
+                        for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
+                            System.out.println(entry.getKey() + "=" + entry.getValue());
+                        }
+                    }
+                }
+                if(messageBuffer.isMessageQueueEmpty()) {
+                    this.msgSender.sendEnd();
+                }
+                break;
+            case(Constants.STATE_CHANGE):
+                msgLogger.printLog(msg, Constants.MSG_SUCC, null, Constants.STATE_CHANGE);
+                if(tmp.size() == this.endMap.size()) {
+                    if(tmp.equals(this.endMap.keySet())) {
+                        this.endMap.replace(msg.getFrom(), true);
+                    }
+                    else {
+                        if(msg.getTimestamp() < msgSender.getLastJoinTimestamp()) {//abbiamo lo stesso size, dato che solo un processo fallisce, sicuramente 'e un join
+                            //ho ricevuto un join piu presto percio devo cambiare la mia scelta
+                            this.endMap.keySet().removeAll(tmp);
+                            ArrayList<String> arrayTmp = new ArrayList<>(this.endMap.keySet());
+                            this.msgSender.setLastJoin(arrayTmp.get(0), msg.getTimestamp());//trovato il nuovo join
+                            this.generateendMap();
+                            this.endMap.put(this.msgSender.getLastJoinIp(), false);
+                            this.endMap.replace(msg.getFrom(), true);
+                            if(debug) {
+                                System.out.println("endMap state");
+                                for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
+                                    System.out.println(entry.getKey() + "=" + entry.getValue());
+                                }
+                            }
+                            if(messageBuffer.isMessageQueueEmpty()) {
+                                this.msgSender.sendEnd();
+                            }
+                        }
+                    }
+                }
+                else {
+                    //ho fatto un join e ho ricevuto un remove
+                    //remove ha precedenza su join
+                    this.endMap.keySet().removeAll(tmp);
+                    this.endMap.keySet().remove(this.msgSender.getLastJoinIp());
+                    ArrayList<String> arrayTmp = new ArrayList<>(this.endMap.keySet());
+                    this.msgSender.setLastRemoveIp(arrayTmp.get(0));
+                    this.generateendMap();
+                    this.endMap.remove(this.msgSender.getLastRemoveIp()); //sicuramente non 'e shadow remove
+                    this.endMap.replace(msg.getFrom(), true);
+                    if(debug) {
+                        System.out.println("endMap state");
+                        for(Map.Entry<String, Boolean> entry : this.endMap.entrySet()) {
+                            System.out.println(entry.getKey() + "=" + entry.getValue());
+                        }
+                    }
+                    if(messageBuffer.isMessageQueueEmpty()) {
+                        this.msgSender.sendEnd();
+                    }
+                }
+                if(this.checkendMap()) {
+                    this.setJoined(msg.getView());
+                }
+                break;
         }
     }
 
@@ -335,6 +333,7 @@ public class MsgReceiver implements Runnable {
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_NEW);
                     this.msgSender.sendJoin();
                     this.setJoining();
+                    this.msgSender.update(msg.getFrom(), msg.getTimestamp());
                     break;
                 case(Constants.STATE_JOINING):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINING);
@@ -442,6 +441,7 @@ public class MsgReceiver implements Runnable {
     public void setJoined(int view) {
         this.state = Constants.STATE_JOINED;
         this.msgSender.setTrue();
+        System.out.println("Joined actual members: " + this.msgSender.getMember().toString());
 
         this.messageBuffer.updateFIFOQueue(this.msgSender.getMember());
         this.messageBuffer.reset();
