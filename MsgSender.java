@@ -158,7 +158,7 @@ public class MsgSender {
                 System.out.println("ip=" + this.lastJoinIp + " alive=" + this.lastJoinTimestamp);
             }
         }
-        if((now - this.lastJoinTimestamp) > 5000*3) {
+        if((now - this.lastJoinTimestamp) > 5000*3 && this.lastJoinTimestamp != 0L) {
             if(this.lastRemoveIp == null) {
                 this.sendDrop(this.lastJoinIp);
                 if(debug) {

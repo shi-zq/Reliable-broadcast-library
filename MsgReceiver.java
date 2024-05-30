@@ -144,6 +144,8 @@ public class MsgReceiver implements Runnable {
                 msgLogger.printLog(msg, Constants.MSG_SUCC, null, Constants.STATE_JOINING);
                 if(tmp.contains(ip)) {
                     if(tmp.size() == 1) {
+                        this.generateendMap();
+                        this.endMap.put(msgSender.getLastJoinIp(), false);
                         this.endMap.replace(msg.getFrom(), true);
                     }
                     else {
