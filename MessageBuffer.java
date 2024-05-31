@@ -8,14 +8,16 @@ public class MessageBuffer {
     private Map<String, Integer> expectedSequenceNumber;  // Used for FIFO
     private PriorityQueue<ReliableMsg> messageQueue;
     private ACKManager ackManager;  // 加入ACK管理器
+    private Boolean debug;
 
-    public MessageBuffer() {
+    public MessageBuffer(Boolean debug) {
         this.FIFOQueue = new HashMap<>();  // New HashMap to buffer msg from different id
         this.expectedSequenceNumber = new HashMap<>(); //初始化用于存放FIFO递增序列号的表
         this.messageQueue = new PriorityQueue<>(Comparator  // 初始化 PriorityQueue，按照 scalar clock 和 process ID 排序
                 .comparingInt(ReliableMsg::getScalarclock)
                 .thenComparing(ReliableMsg::getFrom));
         this.ackManager = new ACKManager();  // 初始化ACK管理器
+        this.debug = debug;
     }
 
 
@@ -44,19 +46,21 @@ public class MessageBuffer {
             queue.add(msg);
         }
         //
-        System.out.println("This is queue of" + processId);
-        for(ReliableMsg tmp : queue){
-            System.out.println("type : " + tmp.getType() + ";" + "from "  + tmp.getFrom() + ";" + "sequence number : " + tmp.getSequenceNumber() + ";" + "clock : " + tmp.getScalarclock());
+        if(debug) {
+            System.out.println("This is queue of" + processId);
+            for (ReliableMsg tmp : queue) {
+                System.out.println("type : " + tmp.getType() + ";" + "from " + tmp.getFrom() + ";" + "sequence number : " + tmp.getSequenceNumber() + ";" + "clock : " + tmp.getScalarclock());
+            }
+            System.out.println("These are members");
+            for (String tmp : members) {
+                System.out.println(tmp);
+            }
+            System.out.println("This is expected SN");
+            for (Map.Entry<String, Integer> entry : expectedSequenceNumber.entrySet()) {
+                System.out.println("ip : " + entry.getKey() + ";" + "expectedSequenceNumber : " + entry.getValue());
+            }
+            System.out.println("This is message SN" + seqNumber);
         }
-        System.out.println("These are members");
-        for(String tmp : members) {
-            System.out.println(tmp);
-        }
-        System.out.println("This is expected SN");
-        for(Map.Entry<String, Integer> entry : expectedSequenceNumber.entrySet()) {
-            System.out.println("ip : " + entry.getKey() + ";" + "expectedSequenceNumber : " + entry.getValue());
-        }
-        System.out.println("This is message SN" + seqNumber);
     }
 
     public synchronized void delivery(Set<String> members) {

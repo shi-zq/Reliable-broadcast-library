@@ -9,12 +9,13 @@ public class ReliableBroadcast {
     private LogicalClock clock;
     private Thread senderThread;
     private Thread receiverThread;
+    private Boolean debug = false;
 
     public ReliableBroadcast() throws IOException {
-        this.messageBuffer = new MessageBuffer();
+        this.messageBuffer = new MessageBuffer(debug);
         this.clock = new LogicalClock(InetAddress.getLocalHost().getHostAddress());
-        this.msgSender = new MsgSender(InetAddress.getLocalHost().getHostAddress(), 5000, InetAddress.getByName("255.255.255.255"), clock, true);
-        AliveSender aliveSender = new AliveSender(msgSender, true);
+        this.msgSender = new MsgSender(InetAddress.getLocalHost().getHostAddress(), 5000, InetAddress.getByName("255.255.255.255"), clock, debug);
+        AliveSender aliveSender = new AliveSender(msgSender, debug);
         MsgReceiver msgReceiver = new MsgReceiver(msgSender, 5000, messageBuffer, clock);
         this.senderThread = new Thread(aliveSender);
         this.receiverThread = new Thread(msgReceiver);
@@ -35,30 +36,29 @@ public class ReliableBroadcast {
 
 
     public static void main(String[] args) throws IOException, InterruptedException{
-
         ReliableBroadcast t = new ReliableBroadcast();
-        System.out.println(t.getClass());
         Scanner scanIn =new Scanner(System.in);
         String input = scanIn.nextLine();
         ReliableBroadcast r = new ReliableBroadcast();
         switch(input){
             case("1"):
                 r.run();
-                Thread.sleep(10000);
-                //r.terminate();
-                //vedere se riesco fare il join
+                //1. join sequenziale uno dopo uno
+                //2. join contemporanea di piu client
+                //3. provare a terminare un client e controllare la correta cambiamento di view
+                //4. possibilita di scrivere dei messaggi custom per testare la correta funcionamento dei vari casi estremi
                 break;
-            case("2"):
-                r.run();
-                Thread.sleep(5000);
-                //combinare 1 e 2 per vedere se riesco a fare un joni e leave
-                break;
-            case("3"):
-                Thread.sleep((5000));
-                r.run();
-                Thread.sleep((5000));
+
+
+
+
+
+
+
+
+
                 //combinare 1 e 3 per testare se qualcuno fa il leave
-            case ("4"):
+            case ("g"):
                 r.run();
                 ReliableMsg msg1 = new ReliableMsg(Constants.MSG, InetAddress.getLocalHost().getHostAddress(), System.currentTimeMillis(), 2,"Sencond Message", 2,2 );
                 Thread.sleep((10000));

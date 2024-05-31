@@ -147,6 +147,7 @@ public class MsgReceiver implements Runnable {
                         this.generateendMap();
                         this.endMap.put(msgSender.getLastJoinIp(), false);
                         this.endMap.replace(msg.getFrom(), true);
+                        //sono l'unico membro del network, non c'e bisogno del set view dato che 'e 0 nel msg e nel MsgSender
                     }
                     else {
                         if(this.endMap == null) {
@@ -328,14 +329,16 @@ public class MsgReceiver implements Runnable {
         }
     }
 
-    public void handleAlive(ReliableMsg msg) throws IOException{
+    public void handleAlive(ReliableMsg msg) throws IOException {
         if(msg.getView() == this.msgSender.getView()) {
             switch(this.state) {
                 case(Constants.STATE_NEW):
-                    msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_NEW);
-                    this.msgSender.sendJoin();
-                    this.setJoining();
-                    this.msgSender.update(msg.getFrom(), msg.getTimestamp());
+                    if(msg.getFrom().equals(this.ip)) {
+                        msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_NEW);
+                        this.msgSender.sendJoin();
+                        this.setJoining();
+                        this.msgSender.update(msg.getFrom(), msg.getTimestamp());
+                    }
                     break;
                 case(Constants.STATE_JOINING):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINING);
@@ -346,7 +349,7 @@ public class MsgReceiver implements Runnable {
                             //dopo 2 ALIVE non ricevo nessun END vuole dire che sono solo invio end
                         }
                     }
-                    else{
+                    else {
                         this.retry++;
                         if(this.retry > 1) {
                             this.setNew();//non sono riuscito a fare il join entro 6 secondi sicuramento ho fallito percio riprovo
@@ -388,7 +391,7 @@ public class MsgReceiver implements Runnable {
                         }
                     }
                     else{
-                        this.msgSender.setLastRemoveIpShadow(msg.getBody());
+                        this.msgSender.setLastRemoveIpShadow(msg.getBody());//rimediare dopo
                     }
                     break;
                 case(Constants.STATE_JOINED):
