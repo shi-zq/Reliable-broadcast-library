@@ -22,13 +22,13 @@ public class MsgReceiver implements Runnable {
     private MessageBuffer messageBuffer;
     private LogicalClock clock;
 
-    public MsgReceiver(MsgSender msgSender, int port, MessageBuffer messageBuffer, LogicalClock clock) throws UnknownHostException {
+    public MsgReceiver(MsgSender msgSender, int port, MessageBuffer messageBuffer, LogicalClock clock, Boolean debug) throws UnknownHostException {
         this.msgSender = msgSender;
         this.ip = InetAddress.getLocalHost().getHostAddress();
         this.port = port;
         this.messageBuffer = messageBuffer;
         this.clock = clock;
-        this.debug = true;
+        this.debug = debug;
         this.setNew();
     }
 
@@ -167,7 +167,7 @@ public class MsgReceiver implements Runnable {
                         }
                     }
                     if(this.checkendMap()) {
-                        this.setJoined(msg.getView());
+                        this.setJoined();
                     }
                 }
                 else {
@@ -263,7 +263,7 @@ public class MsgReceiver implements Runnable {
                     }
                 }
                 if(this.checkendMap()) {
-                    this.setJoined(msg.getView());
+                    this.setJoined();
                 }
                 break;
         }
@@ -387,7 +387,7 @@ public class MsgReceiver implements Runnable {
                             }
                         }
                         if(this.checkendMap()) {
-                            this.setJoined(msg.getView());
+                            this.setJoined();
                         }
                     }
                     else{
@@ -421,7 +421,7 @@ public class MsgReceiver implements Runnable {
                         }
                     }
                     if(this.checkendMap()) {
-                        this.setJoined(msg.getView());
+                        this.setJoined();
                     }
                     break;
             }
@@ -443,7 +443,7 @@ public class MsgReceiver implements Runnable {
         this.msgSender.setFalse();
     }
 
-    public void setJoined(int view) {
+    public void setJoined() {
         this.state = Constants.STATE_JOINED;
         this.msgSender.setTrue();
         System.out.println("Joined actual members: " + this.msgSender.getMember().toString());

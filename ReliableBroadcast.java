@@ -16,7 +16,7 @@ public class ReliableBroadcast {
         this.clock = new LogicalClock(InetAddress.getLocalHost().getHostAddress());
         this.msgSender = new MsgSender(InetAddress.getLocalHost().getHostAddress(), 5000, InetAddress.getByName("255.255.255.255"), clock, debug);
         AliveSender aliveSender = new AliveSender(msgSender, debug);
-        MsgReceiver msgReceiver = new MsgReceiver(msgSender, 5000, messageBuffer, clock);
+        MsgReceiver msgReceiver = new MsgReceiver(msgSender, 5000, messageBuffer, clock, debug);
         this.senderThread = new Thread(aliveSender);
         this.receiverThread = new Thread(msgReceiver);
     }
@@ -48,16 +48,6 @@ public class ReliableBroadcast {
                 //3. provare a terminare un client e controllare la correta cambiamento di view
                 //4. possibilita di scrivere dei messaggi custom per testare la correta funcionamento dei vari casi estremi
                 break;
-
-
-
-
-
-
-
-
-
-                //combinare 1 e 3 per testare se qualcuno fa il leave
             case ("g"):
                 r.run();
                 ReliableMsg msg1 = new ReliableMsg(Constants.MSG, InetAddress.getLocalHost().getHostAddress(), System.currentTimeMillis(), 2,"Sencond Message", 2,2 );
@@ -66,6 +56,7 @@ public class ReliableBroadcast {
                 Thread.sleep((1000));
                 ReliableMsg msg2 = new ReliableMsg(Constants.MSG, InetAddress.getLocalHost().getHostAddress(), System.currentTimeMillis(), 2,"First Message", 1,0 );
                 r.send(msg2);
+                break;
 
 
 
