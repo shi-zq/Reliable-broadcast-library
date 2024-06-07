@@ -99,6 +99,7 @@ public class MsgSender {
             catch(IOException e) {
                 e.printStackTrace();
             }
+            return true;
         }
         return false;
     }

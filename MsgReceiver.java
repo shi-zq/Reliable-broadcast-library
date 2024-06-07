@@ -390,7 +390,7 @@ public class MsgReceiver implements Runnable {
                             this.setJoined();
                         }
                     }
-                    else{
+                    else {
                         this.msgSender.setLastRemoveIpShadow(msg.getBody());//rimediare dopo
                     }
                     break;
