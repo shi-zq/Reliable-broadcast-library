@@ -46,10 +46,18 @@ only 1 change of member can happen join or drop(drop优先级比join高)
 (end join)->receive end(drop)->change my decision from join to end
 (end drop)->end(join)-> ignore
 (end drop)->drop or join is irrelevant
-## MSG ACK 
-这部分有可能得加rentao的设计
 
 ## 排序部分
 
+### Algorithm Description
 
+Using logical clocks to achieve totally ordered multicase:
+1) We suppose that communication channels are reliable and FIFO. 
+2) logical clocks are composed from a scalar clock and ip address of a certain host.
+3) In a view, each message has a unique logical clock(which is message ID). Received messages are ordered by first scalar clock and then IP.
+4) Receivers broadcast ACKs to response a certain message.
+5) If a host receives all ACKs of a message from all other hosts; And that message is ranked first in the queue; And no ACKs to other messages indicating there is a message prior but not received. The host delivers the message.
 
+### Characters
+#### ACK Manager
+dsda
