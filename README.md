@@ -54,10 +54,26 @@ only 1 change of member can happen join or drop(drop优先级比join高)
 Using logical clocks to achieve totally ordered multicase:
 1) We suppose that communication channels are reliable and FIFO. 
 2) logical clocks are composed from a scalar clock and ip address of a certain host.
-3) In a view, each message has a unique logical clock(which is message ID). Received messages are ordered by first scalar clock and then IP.
+3) In a view, each message has a unique logical clock(which is message ID). Received messages are ordered by first scalar clock and then Ip address.
 4) Receivers broadcast ACKs to response a certain message.
 5) If a host receives all ACKs of a message from all other hosts; And that message is ranked first in the queue; And no ACKs to other messages indicating there is a message prior but not received. The host delivers the message.
 
 ### Characters
+
+#### FIFO Queue
+In our algorithm we assume that the channel is FIFO but actually it's not the case.
+To solve this, all ACK and MSG messages have a sequence number initially set to zero.
+FIFO Queue receives messages from MSGReveicer and it contains two maps. One is ExpectedSequenceNumber whose keys are Ip address followed by correct sequence of next message; The other map is FIFO Queue whose keys are Ip address followed by a queue containing messages whose sequence number is not expected.
+After it receives message with correct sequence number, it checks whether messages in the queue can be released and deliver all messages that is FIFO to the ACK Manager or Message Buffer based on its type.
+
 #### ACK Manager
-dsda
+ACK Manager receives messages from FIFO Queue and it is responsible for handling ACK messages and to check if a message is fully ACKed.
+It has a map where the key is message ID(logical clock) followed by Ip addresses of hosts who have ACKed the message.
+When it receives a new message it initializes its queue. When ACKs received it adds ACK's sender Ip to the queue.
+
+ACK Manager also has a list called "WaitingForIt". When receiving ACKs of a message but that message is not received yet, it adds that message ID to the list and deletes it when the message comes.
+
+#### Message Buffer
+The Message Buffer receives message from FIFO Queue and is responsible for handling the message queue and delivery. It has a messageQueue which is a PriorityQueue, comparing first scalar clock and then Ip address. So that we can be sure that every member maintains the same order in the queue.
+When receiving an ACK, the buffer tries to deliver. It asks the ACK Manager if the message on top is fully ACKed and pop it out if the answer is yes. However, it will also check WaitingForIt to make sure that there are no messages not received yet. It only deliver when WaitingForIt is empty to make sure that there is no mistake.
+Eventually all buffers will have the same order and deliver it to the applications.
