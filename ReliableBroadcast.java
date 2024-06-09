@@ -51,7 +51,7 @@ public class ReliableBroadcast {
             case ("2"):
                 r.run();
                 ReliableMsg msg1 = new ReliableMsg(Constants.MSG, InetAddress.getLocalHost().getHostAddress(), System.currentTimeMillis(), 2,"Sencond Message", 2,2 );
-                Thread.sleep((10000));
+                Thread.sleep((5000));
                 r.send(msg1);
                 Thread.sleep((1000));
                 ReliableMsg msg2 = new ReliableMsg(Constants.MSG, InetAddress.getLocalHost().getHostAddress(), System.currentTimeMillis(), 2,"First Message", 1,0 );

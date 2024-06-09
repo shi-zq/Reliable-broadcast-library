@@ -202,7 +202,7 @@ public class MsgSender {
         this.lastJoinIp = null;
         this.lastJoinTimestamp = 0L;
         this.clock.reset();
-        this.messageSequenceNumber = 0;
+        this.messageSequenceNumber = 3;
         this.view = view+1;
     }
 
