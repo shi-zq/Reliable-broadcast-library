@@ -234,6 +234,7 @@ public class MsgSender {
     public synchronized void setLastRemoveIpShadow(String lastRemoveIp) {
         this.lastRemoveIp = lastRemoveIp;
         awareness = false;
+
         this.tempMember.remove(lastRemoveIp);
     }
 

@@ -1,4 +1,4 @@
-public class AliveSender implements  Runnable{
+public class AliveSender implements  Runnable {
     private final MsgSender msgSender;
     private final boolean debug;
 
@@ -7,7 +7,7 @@ public class AliveSender implements  Runnable{
         this.debug = debug;
     }
 
-    public void run(){
+    public void run() {
         System.out.println("Alive sender ready");
         while(true){
             this.msgSender.sendAlive();

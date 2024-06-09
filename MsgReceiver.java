@@ -119,12 +119,12 @@ public class MsgReceiver implements Runnable {
                         System.out.println(entry.getKey() + "=" + entry.getValue());
                     }
                 }
-                if(messageBuffer.isMessageQueueEmpty()) {
+                if(messageBuffer.isMessageQueueEmpty()) {//controllo se sono pronto per inviare end
                     this.msgSender.sendEnd();
                 }
                 break;
             case(Constants.STATE_CHANGE):
-                //ogni client puo fare solo una decisione(drop ha precedenza su join)
+                //ogni client puo fare solo una decisione(drop ha precedenza su join), percio lo ignoro
                 msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_CHANGE);
                 break;
         }
@@ -147,20 +147,20 @@ public class MsgReceiver implements Runnable {
                         this.generateendMap();
                         this.endMap.put(msgSender.getLastJoinIp(), false);
                         this.endMap.replace(msg.getFrom(), true);
-                        //sono l'unico membro del network, non c'e bisogno del set view dato che 'e 0 nel msg e nel MsgSender
+                        //sono l'unico membro del network
                     }
                     else {
                         if(this.endMap == null) {
                             tmp.remove(this.ip);//devo rimuovermi dato che il mio ip e su lastjoinip
-                            this.msgSender.setMemberMap(tmp);
-                            this.msgSender.setView(msg.getView());
+                            this.msgSender.setMemberMap(tmp);//aggiorno i membri attuale
+                            this.msgSender.setView(msg.getView());//aggiorno il view
                             this.generateendMap();
                             this.endMap.put(this.msgSender.getLastJoinIp(), false);// metto il mio ip
                             this.endMap.replace(msg.getFrom(), true);
                             if(this.msgSender.getLastRemoveIp() != null) {
                                 this.endMap.replace(this.msgSender.getLastRemoveIp(), true);//controllo se ho shadowremove
                             }
-                            this.msgSender.sendEnd();
+                            this.msgSender.sendEnd();// sono nello stato joining, sicuramente non ho messaggi
                         }
                         else {
                             this.endMap.replace(msg.getFrom(), true);
@@ -172,7 +172,7 @@ public class MsgReceiver implements Runnable {
                 }
                 else {
                     if(tmp.size() == 1 && this.msgSender.getLastJoinTimestamp() > msg.getTimestamp()) {
-                        this.setNew();
+                        this.setNew(); //qualcuno sta creando il gruppo prima di me, riparto
                     }
                 }
                 break;
@@ -224,8 +224,8 @@ public class MsgReceiver implements Runnable {
                     else {
                         if(msg.getTimestamp() < msgSender.getLastJoinTimestamp()) {//abbiamo lo stesso size, dato che solo un processo fallisce, sicuramente 'e un join
                             //ho ricevuto un join piu presto percio devo cambiare la mia scelta
-                            this.endMap.keySet().removeAll(tmp);
-                            ArrayList<String> arrayTmp = new ArrayList<>(this.endMap.keySet());
+                            tmp.removeAll(this.endMap.keySet()); //rimuove i duplicati, rimane solo il nuovo membro
+                            ArrayList<String> arrayTmp = new ArrayList<>(tmp);
                             this.msgSender.setLastJoin(arrayTmp.get(0), msg.getTimestamp());//trovato il nuovo join
                             this.generateendMap();
                             this.endMap.put(this.msgSender.getLastJoinIp(), false);
@@ -243,11 +243,11 @@ public class MsgReceiver implements Runnable {
                     }
                 }
                 else {
-                    //ho fatto un join e ho ricevuto un remove
-                    //remove ha precedenza su join
+                    //ho fatto un join e ho ricevuto un drop
+                    //drop ha precedenza su join
                     this.endMap.keySet().removeAll(tmp);
                     this.endMap.keySet().remove(this.msgSender.getLastJoinIp());
-                    ArrayList<String> arrayTmp = new ArrayList<>(this.endMap.keySet());
+                    ArrayList<String> arrayTmp = new ArrayList<>(this.endMap.keySet());//
                     this.msgSender.setLastRemoveIp(arrayTmp.get(0));
                     this.generateendMap();
                     this.endMap.remove(this.msgSender.getLastRemoveIp()); //sicuramente non 'e shadow remove

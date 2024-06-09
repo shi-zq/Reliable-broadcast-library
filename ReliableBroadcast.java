@@ -46,9 +46,9 @@ public class ReliableBroadcast {
                 //1. join sequenziale uno dopo uno
                 //2. join contemporanea di piu client
                 //3. provare a terminare un client e controllare la correta cambiamento di view
-                //4. possibilita di scrivere dei messaggi custom per testare la correta funcionamento dei vari casi estremi
+                //4. provare a fare il join per vedere il cambiamento del view
                 break;
-            case ("g"):
+            case ("2"):
                 r.run();
                 ReliableMsg msg1 = new ReliableMsg(Constants.MSG, InetAddress.getLocalHost().getHostAddress(), System.currentTimeMillis(), 2,"Sencond Message", 2,2 );
                 Thread.sleep((10000));
