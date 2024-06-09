@@ -145,7 +145,7 @@ public class MsgSender {
     public synchronized void checkTimestamp() {
         Long now = System.currentTimeMillis();
         for(Map.Entry<String, Long> entry : memberMap.entrySet()) {
-            if((now - entry.getValue()) > 5000*3) {
+            if((now - entry.getValue()) > 3000*2) {
                 if(this.lastRemoveIp == null) {
                     this.sendDrop(entry.getKey());
                 }
@@ -159,7 +159,7 @@ public class MsgSender {
                 System.out.println("ip=" + this.lastJoinIp + " alive=" + this.lastJoinTimestamp);
             }
         }
-        if((now - this.lastJoinTimestamp) > 5000*3 && this.lastJoinTimestamp != 0L) {
+        if((now - this.lastJoinTimestamp) > 3000*2 && this.lastJoinTimestamp != 0L) {
             if(this.lastRemoveIp == null) {
                 this.sendDrop(this.lastJoinIp);
                 if(debug) {
