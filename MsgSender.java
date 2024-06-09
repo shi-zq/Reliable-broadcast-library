@@ -44,7 +44,7 @@ public class MsgSender {
         this.debug = debug;
 
         this.tempMember = new HashSet<>();
-        this.messageSequenceNumber = 0;
+        this.messageSequenceNumber = 3;
         this.clock = clock;
     }
 

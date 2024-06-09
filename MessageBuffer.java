@@ -51,10 +51,10 @@ public class MessageBuffer {
             for (ReliableMsg tmp : queue) {
                 System.out.println("type : " + tmp.getType() + ";" + "from " + tmp.getFrom() + ";" + "sequence number : " + tmp.getSequenceNumber() + ";" + "clock : " + tmp.getScalarclock());
             }
-            System.out.println("These are members");
-            for (String tmp : members) {
-                System.out.println(tmp);
-            }
+//            System.out.println("These are members");
+//            for (String tmp : members) {
+//                System.out.println(tmp);
+//            }
             System.out.println("This is expected SN");
             for (Map.Entry<String, Integer> entry : expectedSequenceNumber.entrySet()) {
                 System.out.println("ip : " + entry.getKey() + ";" + "expectedSequenceNumber : " + entry.getValue());
