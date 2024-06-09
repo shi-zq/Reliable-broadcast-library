@@ -145,14 +145,14 @@ public class MsgSender {
     public synchronized void checkTimestamp() {
         Long now = System.currentTimeMillis();
         for(Map.Entry<String, Long> entry : memberMap.entrySet()) {
-            if((now - entry.getValue()) > 3000*2) {
+            if((now - entry.getValue()) > 3000*3) {
                 if(this.lastRemoveIp == null) {
                     this.sendDrop(entry.getKey());
                     System.out.println("ipDROP=" + entry.getKey() + " alive=" + entry.getValue());
                 }
             }
         }
-        if((now - this.lastJoinTimestamp) > 3000*2) {
+        if((now - this.lastJoinTimestamp) > 3000*3 && this.lastJoinTimestamp != 0L) {
             if(this.lastRemoveIp == null) {
                 this.sendDrop(this.lastJoinIp);
 

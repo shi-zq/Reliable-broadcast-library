@@ -284,9 +284,6 @@ public class MsgReceiver implements Runnable {
                     //messageBuffer.receiveACK(msg);
                     //messageBuffer.delivery(msgSender.getMember());
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINED);
-                    if(messageBuffer.isMessageQueueEmpty()) {
-                        this.msgSender.sendEnd();
-                    }
                     break;
                 case (Constants.STATE_CHANGE):
                     clock.updateScalarclock(msg.getScalarclock());
