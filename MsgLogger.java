@@ -41,7 +41,6 @@ public class MsgLogger {
                 + "from : " + msg.getFrom() + " , "
                 + "view : " + msg.getView() + " , "
                 + "body : " + msg.getBody() + " , "
-                + "sequ : " + msg.getSequenceNumber() + ","
                 + "\n";
         printWriter.print(info);
         System.out.println(info);

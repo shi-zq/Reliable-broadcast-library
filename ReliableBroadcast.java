@@ -57,6 +57,8 @@ public class ReliableBroadcast {
                 ReliableMsg msg2 = new ReliableMsg(Constants.MSG, InetAddress.getLocalHost().getHostAddress(), System.currentTimeMillis(), 2,"First Message", 1,0 );
                 r.send(msg2);
                 break;
+                //For testing Sender SequenceNumber reset to 3. And initialized to 3. And SendACK method SequenceNumber - 2.
+                //Receiver does not change.
 
 
 

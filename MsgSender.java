@@ -44,7 +44,8 @@ public class MsgSender {
         this.debug = debug;
 
         this.tempMember = new HashSet<>();
-        this.messageSequenceNumber = 3;
+        this.messageSequenceNumber = 0;
+        //this.messageSequenceNumber = 3;
         this.clock = clock;
     }
 
@@ -108,7 +109,8 @@ public class MsgSender {
         ReliableMsg ack = new ReliableMsg(Constants.MSG_ACK, this.ip, System.currentTimeMillis(), this.view, getMessageId(message), clock.getScalarclock(), this.messageSequenceNumber);
         try {
             sendMsgToSocket(ack);
-            messageSequenceNumber = messageSequenceNumber - 2;
+            messageSequenceNumber = messageSequenceNumber + 1;
+            //messageSequenceNumber = messageSequenceNumber - 2;
             clock.updateScalarclock(message.getScalarclock());
         } catch (IOException e) {
             e.printStackTrace();
@@ -202,7 +204,8 @@ public class MsgSender {
         this.lastJoinIp = null;
         this.lastJoinTimestamp = 0L;
         this.clock.reset();
-        this.messageSequenceNumber = 3;
+        //this.messageSequenceNumber = 3;
+        this.messageSequenceNumber = 0;
         this.view = view+1;
     }
 
