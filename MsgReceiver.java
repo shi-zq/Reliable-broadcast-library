@@ -330,7 +330,6 @@ public class MsgReceiver implements Runnable {
     }
 
     public void handleAlive(ReliableMsg msg) throws IOException {
-        if(msg.getView() == this.msgSender.getView()) {
             switch(this.state) {
                 case(Constants.STATE_NEW):
                     if(msg.getFrom().equals(this.ip)) {
@@ -344,14 +343,14 @@ public class MsgReceiver implements Runnable {
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_JOINING);
                     if(this.endMap == null) {
                         this.retry++;
-                        if(this.retry > 1) {
+                        if(this.retry > 2) {
                             this.msgSender.sendEnd();
                             //dopo 2 ALIVE non ricevo nessun END vuole dire che sono solo invio end
                         }
                     }
                     else {
                         this.retry++;
-                        if(this.retry > 1) {
+                        if(this.retry > 2) {
                             this.setNew();//non sono riuscito a fare il join entro 6 secondi sicuramento ho fallito percio riprovo
                         }
                     }
@@ -366,7 +365,6 @@ public class MsgReceiver implements Runnable {
                     this.msgSender.update(msg.getFrom(), msg.getTimestamp());
                     break;
             }
-        }
     }
 
     public void handleDrop(ReliableMsg msg) throws IOException {

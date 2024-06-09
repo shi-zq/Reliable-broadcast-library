@@ -167,11 +167,13 @@ public class MsgSender {
                 }
             }
         }
-
     }
 
     public synchronized void update(String ip, Long time) {
         this.memberMap.replace(ip, time);
+        if(ip.equals(this.lastJoinIp))  {
+            this.lastJoinTimestamp = time;
+        }
     }
 
 

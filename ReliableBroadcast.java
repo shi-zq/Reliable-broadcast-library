@@ -9,7 +9,7 @@ public class ReliableBroadcast {
     private LogicalClock clock;
     private Thread senderThread;
     private Thread receiverThread;
-    private Boolean debug = false;
+    private Boolean debug = true;
 
     public ReliableBroadcast() throws IOException {
         this.messageBuffer = new MessageBuffer(debug);
