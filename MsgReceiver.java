@@ -368,7 +368,6 @@ public class MsgReceiver implements Runnable {
     }
 
     public void handleDrop(ReliableMsg msg) throws IOException {
-        if(msg.getView() == this.msgSender.getView()) {
             switch(this.state) {
                 case(Constants.STATE_NEW):
                     msgLogger.printLog(msg,Constants.MSG_SUCC,null,Constants.STATE_NEW);
@@ -423,7 +422,6 @@ public class MsgReceiver implements Runnable {
                     }
                     break;
             }
-        }
     }
 
     public void setNew() {
