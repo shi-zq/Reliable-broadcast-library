@@ -14,9 +14,9 @@ public class ReliableBroadcast {
     public ReliableBroadcast() throws IOException {
         this.messageBuffer = new MessageBuffer(debug);
         this.clock = new LogicalClock(InetAddress.getLocalHost().getHostAddress());
-        this.msgSender = new MsgSender(InetAddress.getLocalHost().getHostAddress(), 5000, InetAddress.getByName("255.255.255.255"), clock, debug);
+        this.msgSender = new MsgSender(InetAddress.getLocalHost().getHostAddress(), 6000, InetAddress.getByName("255.255.255.255"), clock, debug);
         AliveSender aliveSender = new AliveSender(msgSender, debug);
-        MsgReceiver msgReceiver = new MsgReceiver(msgSender, 5000, messageBuffer, clock, debug);
+        MsgReceiver msgReceiver = new MsgReceiver(msgSender, 6000, messageBuffer, clock, debug);
         this.senderThread = new Thread(aliveSender);
         this.receiverThread = new Thread(msgReceiver);
     }

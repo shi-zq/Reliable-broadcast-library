@@ -148,23 +148,14 @@ public class MsgSender {
             if((now - entry.getValue()) > 3000*2) {
                 if(this.lastRemoveIp == null) {
                     this.sendDrop(entry.getKey());
+                    System.out.println("ipDROP=" + entry.getKey() + " alive=" + entry.getValue());
                 }
             }
-            if(debug) {
-                System.out.println("ip=" + entry.getKey() + " alive=" + entry.getValue());
-            }
         }
-        if(debug) {
-            if(this.lastJoinIp != null) {
-                System.out.println("ip=" + this.lastJoinIp + " alive=" + this.lastJoinTimestamp);
-            }
-        }
-        if((now - this.lastJoinTimestamp) > 3000*2 && this.lastJoinTimestamp != 0L) {
+        if((now - this.lastJoinTimestamp) > 3000*2) {
             if(this.lastRemoveIp == null) {
                 this.sendDrop(this.lastJoinIp);
-                if(debug) {
-                    System.out.println("lastRemoveIp=" + this.lastRemoveIp);
-                }
+
             }
         }
     }
